@@ -1,4 +1,4 @@
-﻿const {
+const {
   WINDOW_DEFAULT_WIDTH,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_MIN_WIDTH,
@@ -54,7 +54,9 @@ function createWindowController({
   }
 
   function getWindowOpacityFromLevel(level) {
-    return clampWindowOpacityLevel(level) / 10;
+    const clamped = clampWindowOpacityLevel(level);
+    // Increase the opacity for each point: scale 1-10 to 0.55 - 1.0
+    return 0.55 + ((clamped - 1) / 9) * 0.45;
   }
 
   function getVisibleWindowOpacity() {

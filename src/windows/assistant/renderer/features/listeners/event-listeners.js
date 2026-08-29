@@ -24,6 +24,8 @@ export function setupEventListeners({
     closeSettingsBtn,
     saveSettingsBtn,
     settingWindowOpacity,
+    quickWindowOpacity,
+    saveQuickOpacitySetting,
     selectedSources,
     isCloseConfirmationOpen,
     isShortcutPressed,
@@ -150,6 +152,22 @@ export function setupEventListeners({
             const value = event?.target?.value;
             if (typeof value !== 'undefined') {
                 updateWindowOpacityValueLabel(value);
+            }
+        });
+    }
+
+    if (quickWindowOpacity) {
+        quickWindowOpacity.addEventListener('input', (event) => {
+            const value = event?.target?.value;
+            if (typeof value !== 'undefined') {
+                updateWindowOpacityValueLabel(value);
+            }
+        });
+
+        quickWindowOpacity.addEventListener('change', (event) => {
+            const value = event?.target?.value;
+            if (typeof value !== 'undefined' && saveQuickOpacitySetting) {
+                saveQuickOpacitySetting(value);
             }
         });
     }

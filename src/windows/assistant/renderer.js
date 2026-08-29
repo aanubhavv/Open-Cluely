@@ -129,6 +129,7 @@ const toggleAssemblyKeyVisibilityBtn = document.getElementById('toggle-assembly-
 const settingAssemblyModel = document.getElementById('setting-assembly-model');
 const settingWindowOpacity = document.getElementById('setting-window-opacity');
 const settingWindowOpacityValue = document.getElementById('setting-window-opacity-value');
+const quickWindowOpacity = document.getElementById('quick-window-opacity');
 const settingsShortcutsList = document.getElementById('settings-shortcuts-list');
 
 // Timer
@@ -235,6 +236,9 @@ async function init() {
     setupIpcListeners();
     setupWindowAdjustments();
     applyTheme(resolveInitialThemePreference(settings), { persist: false });
+    if (settings?.windowOpacityLevel) {
+        updateWindowOpacityValueLabel(settings.windowOpacityLevel);
+    }
     updateUI();
     transcriptionManager.updateTranscriptionUI();
     transcriptionManager.renderMonitorState();
@@ -256,6 +260,30 @@ async function init() {
 
 function updateWindowOpacityValueLabel(value) {
     settingsPanelManager.updateWindowOpacityValueLabel(value);
+    
+    if (settingWindowOpacity && settingWindowOpacity.value !== String(value)) {
+        settingWindowOpacity.value = value;
+    }
+    
+    if (quickWindowOpacity && quickWindowOpacity.value !== String(value)) {
+        quickWindowOpacity.value = value;
+    }
+    
+    if (window.applyWindowOpacityLevelCSS) {
+        window.applyWindowOpacityLevelCSS(value);
+    }
+}
+
+async function saveQuickOpacitySetting(level) {
+    try {
+        const settings = await window.electronAPI.getSettings();
+        if (settings && !settings.error) {
+            settings.windowOpacityLevel = level;
+            await window.electronAPI.saveSettings(settings);
+        }
+    } catch (e) {
+        console.error("Failed to save quick opacity", e);
+    }
 }
 
 function parseThemePreference(theme) {
@@ -321,6 +349,8 @@ function updateThemeToggleUi() {
     themeToggleBtn.removeAttribute('title');
 }
 
+let currentWindowOpacityLevel = 10;
+
 function applyTheme(theme, options = {}) {
     const { persist = true, announce = false } = options;
     activeTheme = normalizeTheme(theme);
@@ -336,11 +366,44 @@ function applyTheme(theme, options = {}) {
     if (announce) {
         showFeedback(activeTheme === THEME_DARK ? 'Dark mode enabled' : 'Light mode enabled', 'info');
     }
+
+    if (window.applyWindowOpacityLevelCSS) {
+        window.applyWindowOpacityLevelCSS(currentWindowOpacityLevel);
+    }
 }
 
 function toggleThemeMode() {
     const nextTheme = activeTheme === THEME_DARK ? THEME_LIGHT : THEME_DARK;
     applyTheme(nextTheme, { persist: true, announce: true });
+}
+
+window.applyWindowOpacityLevelCSS = function(level) {
+    const root = document.body;
+    const clampedLevel = Math.min(Math.max(Number.parseInt(level, 10) || 10, 1), 10);
+    currentWindowOpacityLevel = clampedLevel;
+    const isDark = activeTheme === THEME_DARK;
+
+    if (clampedLevel === 10) {
+        if (isDark) {
+            root.style.setProperty('--glass-shell-bg', 'rgba(10, 10, 10, 0.95)');
+            root.style.setProperty('--glass-panel-bg', 'rgba(15, 15, 20, 0.95)');
+        } else {
+            root.style.setProperty('--glass-shell-bg', 'rgba(255, 255, 255, 0.95)');
+            root.style.setProperty('--glass-panel-bg', 'rgba(255, 255, 255, 0.95)');
+        }
+    } else {
+        const minAlpha = isDark ? 0.08 : 0.05;
+        const maxAlpha = 0.85;
+        const alpha = minAlpha + ((clampedLevel - 1) / 9) * (maxAlpha - minAlpha);
+        
+        if (isDark) {
+            root.style.setProperty('--glass-shell-bg', `rgba(8, 14, 28, ${alpha})`);
+            root.style.setProperty('--glass-panel-bg', `rgba(15, 23, 42, ${alpha})`);
+        } else {
+            root.style.setProperty('--glass-shell-bg', `rgba(255, 255, 255, ${alpha})`);
+            root.style.setProperty('--glass-panel-bg', `rgba(255, 255, 255, ${alpha})`);
+        }
+    }
 }
 
 function applySettingsShortcutConfig(settings) {
@@ -1108,6 +1171,8 @@ function setupEventListeners() {
         closeSettingsBtn,
         saveSettingsBtn,
         settingWindowOpacity,
+        quickWindowOpacity,
+        saveQuickOpacitySetting,
         selectedSources,
         isCloseConfirmationOpen: () => isCloseConfirmationOpen,
         isShortcutPressed,
