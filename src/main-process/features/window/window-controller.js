@@ -100,6 +100,7 @@ function createWindowController({
       }
 
       isVisible = true;
+      mainWindow.setIgnoreMouseEvents(false);
       mainWindow.setOpacity(getVisibleWindowOpacity());
       if (!mainWindow.isVisible()) {
         mainWindow.show();
@@ -196,6 +197,11 @@ function createWindowController({
 
     attachWindowRecoveryHandlers();
     isVisible = !launchHidden;
+    
+    if (launchHidden && mainWindow) {
+      mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    }
+    
     return mainWindow;
   }
 
@@ -259,9 +265,17 @@ function createWindowController({
 
     const stealthModeEnabled = isVisible;
     isVisible = !stealthModeEnabled;
-    if (isVisible && !mainWindow.isVisible()) {
-      mainWindow.showInactive();
+    
+    if (isVisible) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.showInactive();
+      }
+      mainWindow.setIgnoreMouseEvents(false);
+    } else {
+      mainWindow.setIgnoreMouseEvents(true, { forward: true });
+      mainWindow.blur();
     }
+    
     applyWindowOpacity();
     sendToRenderer('set-stealth-mode', stealthModeEnabled);
   }
@@ -277,11 +291,14 @@ function createWindowController({
     }
 
     mainWindow.setOpacity(0.01);
+    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    mainWindow.blur();
     sendToRenderer('emergency-clear');
 
     autoHideTimer = setTimeout(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         isVisible = true;
+        mainWindow.setIgnoreMouseEvents(false);
         applyWindowOpacity();
         sendToRenderer('set-stealth-mode', false);
       }
@@ -468,8 +485,11 @@ function createWindowController({
 
   function markVisible() {
     isVisible = true;
-    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
-      mainWindow.showInactive();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.showInactive();
+      }
+      mainWindow.setIgnoreMouseEvents(false);
     }
     applyWindowOpacity();
   }
