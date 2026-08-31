@@ -23,7 +23,7 @@
 }
 
 button {
-  cursor: pointer;
+  cursor: default !important;
 }
 
 body {
@@ -106,7 +106,7 @@ body.click-through-active .glass-container {
   font-size: 16px;
   font-weight: bold;
   line-height: 1;
-  cursor: pointer;
+  cursor: default !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -358,7 +358,7 @@ body.click-through-active .glass-container {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
   outline: none;
-  cursor: pointer;
+  cursor: default !important;
 }
 
 .quick-opacity-slider::-webkit-slider-thumb {
@@ -367,7 +367,7 @@ body.click-through-active .glass-container {
   height: 10px;
   background: #fff;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: default !important;
 }
 
 .transcription-control {
@@ -388,7 +388,7 @@ body.click-through-active .glass-container {
   border-radius: 6px;
   font-size: 10px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   display: flex;
@@ -437,7 +437,7 @@ body.click-through-active .glass-container {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -878,7 +878,7 @@ body.chat-resizing * {
   min-width: 40px;
   height: 22px;
   padding: 0 10px;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -1025,7 +1025,7 @@ body.chat-resizing * {
   font-size: 9px;
   font-weight: 700;
   line-height: 1.2;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -1054,7 +1054,7 @@ body.chat-resizing * {
   justify-content: center;
   line-height: 1;
   font-size: 10px;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -1174,7 +1174,7 @@ body.chat-resizing * {
   color: rgba(255, 255, 255, 0.9);
   padding: 4px;
   border-radius: 4px;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
   width: 20px;
   height: 20px;
@@ -1576,7 +1576,7 @@ body.chat-resizing * {
   border: 1px solid transparent;
   font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -1698,7 +1698,7 @@ body.chat-resizing * {
   font-size: 10px;
   font-weight: 700;
   font-family: inherit;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
 }
 
@@ -1723,7 +1723,7 @@ body.chat-resizing * {
 }
 
 select.settings-input {
-  cursor: pointer;
+  cursor: default !important;
   -webkit-appearance: none;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23e2e8f0' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
@@ -1877,7 +1877,7 @@ select.settings-input {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
+  cursor: default !important;
   transition: all 0.2s ease;
   margin-top: 4px;
 }
