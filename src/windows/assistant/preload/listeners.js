@@ -121,6 +121,9 @@ function createEventActions(ipcRenderer) {
     },
     onSetClickThroughMode: (callback) => {
       ipcRenderer.on('set-click-through-mode', (_event, value) => callback(value));
+    },
+    onSetNoFocusMode: (callback) => {
+      ipcRenderer.on('set-no-focus-mode', (_event, value) => callback(value));
     }
   };
 }

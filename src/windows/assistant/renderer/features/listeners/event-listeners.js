@@ -21,6 +21,7 @@ export function setupEventListeners({
     insightsBtn,
     themeToggleBtn,
     clickThroughBtn,
+    noFocusBtn,
     settingsBtn,
     closeSettingsBtn,
     saveSettingsBtn,
@@ -175,6 +176,14 @@ export function setupEventListeners({
         clickThroughBtn.addEventListener('click', () => {
             if (windowApi?.toggleClickThrough) {
                 windowApi.toggleClickThrough();
+            }
+        });
+    }
+
+    if (typeof noFocusBtn !== 'undefined' && noFocusBtn) {
+        noFocusBtn.addEventListener('click', () => {
+            if (windowApi?.toggleNoFocusMode) {
+                windowApi.toggleNoFocusMode();
             }
         });
     }

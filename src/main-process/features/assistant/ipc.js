@@ -171,6 +171,10 @@ function registerAssistantIpc({
     windowController.toggleClickThroughMode();
   });
 
+  ipcMain.handle('toggle-no-focus-mode', () => {
+    windowController.toggleNoFocusMode();
+  });
+
   ipcMain.handle('emergency-hide', () => {
     return windowController.emergencyHide();
   });

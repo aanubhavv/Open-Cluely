@@ -108,6 +108,7 @@ const notesBtn = document.getElementById('notes-btn');
 const insightsBtn = document.getElementById('insights-btn');
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const clickThroughBtn = document.getElementById('click-through-btn');
+const noFocusBtn = document.getElementById('no-focus-btn');
 
 // Settings elements
 const settingsBtn = document.getElementById('settings-btn');
@@ -1222,6 +1223,7 @@ function setupEventListeners() {
         insightsBtn,
         themeToggleBtn,
         clickThroughBtn,
+        noFocusBtn,
         settingsBtn,
         closeSettingsBtn,
         saveSettingsBtn,

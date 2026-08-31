@@ -295,6 +295,21 @@ function createWindowController({
     sendToRenderer('set-click-through-mode', isClickThrough);
   }
 
+  let isNoFocusMode = false;
+
+  function toggleNoFocusMode() {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    isNoFocusMode = !isNoFocusMode;
+    mainWindow.setFocusable(!isNoFocusMode);
+    
+    if (isNoFocusMode) {
+      mainWindow.blur();
+    }
+    
+    sendToRenderer('set-no-focus-mode', isNoFocusMode);
+  }
+
   function emergencyHide() {
     if (autoHideTimer) {
       clearTimeout(autoHideTimer);
@@ -530,6 +545,7 @@ function createWindowController({
     setWindowOpacityLevel,
     toggleStealthMode,
     toggleClickThroughMode,
+    toggleNoFocusMode,
     unregisterShortcuts
   };
 }

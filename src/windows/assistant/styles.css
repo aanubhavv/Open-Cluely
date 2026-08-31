@@ -76,6 +76,15 @@ body.click-through-active .glass-container {
     0 0 10px rgba(16, 185, 129, 0.3);
 }
 
+body.no-focus-active .glass-container {
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    0 0 10px rgba(245, 158, 11, 0.3);
+}
+
 /* DRAG HANDLE - Makes window movable */
 .drag-handle {
   position: absolute;
@@ -589,6 +598,13 @@ body.click-through-active .glass-container {
 .action-btn.theme-toggle-btn {
   background: rgba(99, 102, 241, 0.26);
   border-color: rgba(99, 102, 241, 0.45);
+}
+
+body.no-focus-active .action-btn.no-focus-btn {
+  background: rgba(245, 158, 11, 0.6);
+  color: #fff;
+  border-color: rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
 .action-btn.theme-toggle-btn:hover {

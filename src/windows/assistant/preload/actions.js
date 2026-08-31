@@ -14,6 +14,12 @@ function createInvokeActions(ipcRenderer) {
       fallback: (error) => ({ error: error.message })
     }),
 
+    toggleNoFocusMode: invokeWithFallback(ipcRenderer, {
+      channel: 'toggle-no-focus-mode',
+      label: 'toggleNoFocusMode',
+      fallback: (error) => ({ error: error.message })
+    }),
+
     emergencyHide: invokeWithFallback(ipcRenderer, {
       channel: 'emergency-hide',
       label: 'emergencyHide',

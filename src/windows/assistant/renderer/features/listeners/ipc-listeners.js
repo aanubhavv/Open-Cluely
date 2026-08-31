@@ -80,6 +80,18 @@ export function setupIpcListeners({
         });
     }
 
+    if (windowApi.onSetNoFocusMode) {
+        windowApi.onSetNoFocusMode((isEnabled) => {
+            if (isEnabled) {
+                showFeedback('No-Focus Mode ON', 'info');
+                document.body.classList.add('no-focus-active');
+            } else {
+                showFeedback('No-Focus Mode OFF', 'success');
+                document.body.classList.remove('no-focus-active');
+            }
+        });
+    }
+
     windowApi.onEmergencyClear(() => {
         showEmergencyOverlay();
     });
