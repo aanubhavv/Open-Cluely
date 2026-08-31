@@ -23,7 +23,7 @@
 }
 
 button {
-  cursor: default !important;
+  cursor: pointer;
 }
 
 body {
