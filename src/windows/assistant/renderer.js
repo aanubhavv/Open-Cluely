@@ -638,6 +638,59 @@ function buildAskAiContextPayload() {
     };
 }
 
+async function askAiAboutSpecificMessage(messageId) {
+    if (!hasGeminiApiKeysConfigured) {
+        showFeedback('Gemini API key missing. Add it in Settings.', 'error');
+        return;
+    }
+
+    if (!window.electronAPI?.askAiWithSessionContext) {
+        showFeedback('Feature not available', 'error');
+        return;
+    }
+
+    const message = messageStore.findById(messageId);
+    if (!message) return;
+
+    const label = message.type === 'voice-system' ? 'Host' : 'You';
+    const singleContext = `[${label}]: ${message.content}`;
+
+    const payload = {
+        mode: 'best-next-answer',
+        contextString: singleContext,
+        transcriptContext: singleContext,
+        sessionSummary: '',
+        enabledScreenshotIds: [],
+        screenshotCount: 0
+    };
+
+    await runAiActionWithLock('askAi', async () => {
+        const stream = createStreamHandler('askAi');
+        try {
+            setAnalyzing(true);
+            showLoadingOverlay('Analyzing specific message...');
+            stream.start('**Answer for selected message:**\n\n');
+
+            const result = await window.electronAPI.askAiWithSessionContext(payload);
+
+            if (result?.success && result?.text) {
+                stream.finalize(`**Answer for selected message:**\n\n${result.text}`);
+                showFeedback('Ask AI ready', 'success');
+            } else {
+                throw new Error(result?.error || 'Ask AI failed');
+            }
+        } catch (error) {
+            console.error('Ask AI error:', error);
+            showFeedback('Ask AI failed', 'error');
+            addChatMessage('system', `Error: ${error.message}`);
+        } finally {
+            stream.cleanup();
+            setAnalyzing(false);
+            hideLoadingOverlay();
+        }
+    });
+}
+
 async function askAiWithSessionContext() {
     if (!hasGeminiApiKeysConfigured) {
         showFeedback('Gemini API key missing. Add it in Settings.', 'error');
@@ -1179,6 +1232,7 @@ function setupEventListeners() {
         updateWindowOpacityValueLabel,
         takeStealthScreenshot,
         askAiWithSessionContext,
+        askAiAboutSpecificMessage,
         analyzeScreenshotsOnly,
         clearStealthData,
         emergencyHide,

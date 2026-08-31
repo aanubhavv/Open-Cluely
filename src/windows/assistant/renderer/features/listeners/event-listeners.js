@@ -32,6 +32,7 @@ export function setupEventListeners({
     updateWindowOpacityValueLabel,
     takeStealthScreenshot,
     askAiWithSessionContext,
+    askAiAboutSpecificMessage,
     analyzeScreenshotsOnly,
     clearStealthData,
     emergencyHide,
@@ -120,6 +121,15 @@ export function setupEventListeners({
 
     if (chatMessagesElement) {
         chatMessagesElement.addEventListener('click', (event) => {
+            const askSpecificButton = event.target?.closest?.('.message-ask-specific-btn');
+            if (askSpecificButton) {
+                event.preventDefault();
+                const messageId = askSpecificButton.dataset.messageId;
+                if (!messageId) return;
+                askAiAboutSpecificMessage(messageId);
+                return;
+            }
+
             const copyButton = event.target?.closest?.('.message-copy-btn');
             if (copyButton) {
                 event.preventDefault();
