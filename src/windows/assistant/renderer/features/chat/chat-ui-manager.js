@@ -20,7 +20,7 @@ export function createChatUiManager({
             .replace(/\n/g, '<br>');
     }
 
-    function isChatNearBottom(threshold = 28) {
+    function isChatNearBottom(threshold = 40) {
         if (!chatMessagesElement) {
             return true;
         }

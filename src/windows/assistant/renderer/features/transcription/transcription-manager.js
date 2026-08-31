@@ -472,6 +472,9 @@ export function createTranscriptionManager({
         monitorLastText[source] = `Live: ${trimmed}`;
         renderMonitorState();
 
+        const distanceFromBottom = chatMessagesElement.scrollHeight - chatMessagesElement.clientHeight - chatMessagesElement.scrollTop;
+        const shouldAutoScroll = distanceFromBottom <= 40;
+
         if (source === 'mic') {
             micPartialText = trimmed;
             if (!micPartialDiv) {
@@ -487,7 +490,10 @@ export function createTranscriptionManager({
             }
             systemPartialDiv.querySelector('.message-content').textContent = trimmed;
         }
-        chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
+
+        if (shouldAutoScroll) {
+            chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
+        }
     }
 
     function handleVoskFinal(data) {
