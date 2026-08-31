@@ -280,6 +280,21 @@ function createWindowController({
     sendToRenderer('set-stealth-mode', stealthModeEnabled);
   }
 
+  let isClickThrough = false;
+
+  function toggleClickThroughMode() {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    isClickThrough = !isClickThrough;
+    mainWindow.setIgnoreMouseEvents(isClickThrough, { forward: true });
+    
+    if (isClickThrough) {
+      mainWindow.blur();
+    }
+    
+    sendToRenderer('set-click-through-mode', isClickThrough);
+  }
+
   function emergencyHide() {
     if (autoHideTimer) {
       clearTimeout(autoHideTimer);
@@ -397,6 +412,10 @@ function createWindowController({
       toggleStealthMode();
     });
 
+    registerShortcut('toggleClickThrough', () => {
+      toggleClickThroughMode();
+    });
+
     registerShortcut('takeScreenshot', async () => {
       if (typeof onTakeStealthScreenshot === 'function') {
         await onTakeStealthScreenshot();
@@ -510,6 +529,7 @@ function createWindowController({
     setWindowBounds,
     setWindowOpacityLevel,
     toggleStealthMode,
+    toggleClickThroughMode,
     unregisterShortcuts
   };
 }

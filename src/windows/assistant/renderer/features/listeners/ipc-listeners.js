@@ -68,6 +68,18 @@ export function setupIpcListeners({
         showFeedback(enabled ? 'Stealth mode ON' : 'Stealth mode OFF', 'info');
     });
 
+    if (windowApi.onSetClickThroughMode) {
+        windowApi.onSetClickThroughMode((isEnabled) => {
+            if (isEnabled) {
+                showFeedback('Click-Through enabled (Alt+Shift+Z to disable)', 'info');
+                document.body.classList.add('click-through-active');
+            } else {
+                showFeedback('Click-Through disabled', 'success');
+                document.body.classList.remove('click-through-active');
+            }
+        });
+    }
+
     windowApi.onEmergencyClear(() => {
         showEmergencyOverlay();
     });

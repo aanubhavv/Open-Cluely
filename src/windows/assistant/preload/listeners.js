@@ -1,4 +1,4 @@
-﻿const { createEventListener } = require('./helpers');
+const { createEventListener } = require('./helpers');
 
 function createEventActions(ipcRenderer) {
   const onScreenshotTakenStealth = createEventListener(ipcRenderer, {
@@ -115,7 +115,13 @@ function createEventActions(ipcRenderer) {
     onAiStreamEnd,
     onToggleVoiceRecognition,
     onTriggerAskAi,
-    onSttDebug: (callback) => rawOnSttDebug((data) => callback(data || {}))
+    onSttDebug: (callback) => rawOnSttDebug((data) => callback(data || {})),
+    onSetStealthMode: (callback) => {
+      ipcRenderer.on('set-stealth-mode', (_event, value) => callback(value));
+    },
+    onSetClickThroughMode: (callback) => {
+      ipcRenderer.on('set-click-through-mode', (_event, value) => callback(value));
+    }
   };
 }
 

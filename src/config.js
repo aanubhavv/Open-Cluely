@@ -100,6 +100,12 @@ const KEYBOARD_SHORTCUTS = [
     accelerator: 'Alt+Shift+H'
   },
   {
+    id: 'toggleClickThrough',
+    buttonLabel: 'Toggle Click-Through',
+    description: 'Toggle click-through mode for the window',
+    accelerator: 'Alt+Shift+Z'
+  },
+  {
     id: 'moveWindowLeft',
     buttonLabel: 'Move Window Left',
     description: 'Move window to left side',

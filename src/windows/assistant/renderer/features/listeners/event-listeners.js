@@ -20,6 +20,7 @@ export function setupEventListeners({
     notesBtn,
     insightsBtn,
     themeToggleBtn,
+    clickThroughBtn,
     settingsBtn,
     closeSettingsBtn,
     saveSettingsBtn,
@@ -152,6 +153,14 @@ export function setupEventListeners({
     if (notesBtn) notesBtn.addEventListener('click', generateMeetingNotes);
     if (insightsBtn) insightsBtn.addEventListener('click', getConversationInsights);
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleThemeMode);
+    
+    if (clickThroughBtn) {
+        clickThroughBtn.addEventListener('click', () => {
+            if (windowApi?.toggleClickThrough) {
+                windowApi.toggleClickThrough();
+            }
+        });
+    }
 
     if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
     if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);

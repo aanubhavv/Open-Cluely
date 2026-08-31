@@ -8,6 +8,12 @@ function createInvokeActions(ipcRenderer) {
       fallback: (error) => ({ error: error.message })
     }),
 
+    toggleClickThrough: invokeWithFallback(ipcRenderer, {
+      channel: 'toggle-click-through',
+      label: 'toggleClickThrough',
+      fallback: (error) => ({ error: error.message })
+    }),
+
     emergencyHide: invokeWithFallback(ipcRenderer, {
       channel: 'emergency-hide',
       label: 'emergencyHide',

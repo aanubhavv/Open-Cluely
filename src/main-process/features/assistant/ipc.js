@@ -1,4 +1,4 @@
-﻿function registerAssistantIpc({
+function registerAssistantIpc({
   ipcMain,
   screenshotManager,
   windowController,
@@ -164,7 +164,11 @@
   });
 
   ipcMain.handle('toggle-stealth', () => {
-    return windowController.toggleStealthMode();
+    windowController.toggleStealthMode();
+  });
+
+  ipcMain.handle('toggle-click-through', () => {
+    windowController.toggleClickThroughMode();
   });
 
   ipcMain.handle('emergency-hide', () => {
