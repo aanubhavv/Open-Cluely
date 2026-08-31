@@ -38,6 +38,7 @@ export function setupEventListeners({
     clearStealthData,
     emergencyHide,
     copyChatMessageById,
+    writeTextToClipboard,
     submitManualContextMessage,
     autoResizeManualInput,
     updateManualComposerState,
@@ -137,6 +138,22 @@ export function setupEventListeners({
                 const messageId = copyButton.dataset.messageId;
                 if (!messageId) return;
                 copyChatMessageById(messageId);
+                return;
+            }
+
+            const codeCopyButton = event.target?.closest?.('.code-copy-btn');
+            if (codeCopyButton) {
+                event.preventDefault();
+                const rawCode = decodeURIComponent(codeCopyButton.dataset.code || '');
+                if (!rawCode) return;
+                
+                if (typeof writeTextToClipboard === 'function') {
+                    writeTextToClipboard(rawCode).then(() => {
+                        const originalText = codeCopyButton.textContent;
+                        codeCopyButton.textContent = 'Copied!';
+                        setTimeout(() => { codeCopyButton.textContent = originalText; }, 2000);
+                    }).catch(err => console.error('Failed to copy code: ', err));
+                }
                 return;
             }
 

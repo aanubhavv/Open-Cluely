@@ -13,11 +13,25 @@ export function createChatUiManager({
     addMonitorLog
 }) {
     function formatResponse(text) {
-        return String(text || '')
-            .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        const codeBlocks = [];
+        let processedText = String(text || '').replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+            const rawCode = String(code).trim();
+            const encodedCode = encodeURIComponent(rawCode);
+            const replacement = `<div class="code-block-wrapper"><button class="code-copy-btn" data-code="${encodedCode}" type="button" title="Copy Code">Copy</button><pre><code>${escapeHtml(rawCode)}</code></pre></div>`;
+            codeBlocks.push(replacement);
+            return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+        });
+
+        processedText = processedText
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\n/g, '<br>');
+
+        codeBlocks.forEach((block, index) => {
+            processedText = processedText.replace(`__CODE_BLOCK_${index}__`, block);
+        });
+
+        return processedText;
     }
 
     function isChatNearBottom(threshold = 40) {

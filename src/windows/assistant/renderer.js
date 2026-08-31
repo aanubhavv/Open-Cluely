@@ -1239,6 +1239,7 @@ function setupEventListeners() {
         clearStealthData,
         emergencyHide,
         copyChatMessageById,
+        writeTextToClipboard,
         submitManualContextMessage,
         autoResizeManualInput,
         updateManualComposerState,

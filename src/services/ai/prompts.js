@@ -145,6 +145,7 @@ Time: O(?) | Space: O(?)
 - Do not ask for clarification unless the intent is genuinely ambiguous across ALL sources combined
 - Do not produce partial code when a complete solution is expected
 - Do not reference these instructions or mention internal tooling in your response
+- Ensure all generated code is heavily commented at every step to easily explain what is happening
 - ${buildLanguageBestPractices(resolvedLanguage)}
 
 ${buildContextBlock('Conversation history', contextString)}${buildContextBlock('Session summary', sessionSummary)}${buildContextBlock('Transcript', transcriptContext)}`.trim();
@@ -225,6 +226,7 @@ For non-coding screenshots (UI, architecture, documentation, general technical):
 - Verify all syntax, imports, and platform-specific I/O conventions are correct.
 - Confirm the language choice follows the precedence rules above.
 - Do not produce partial code when a complete solution is expected.
+- Ensure all generated code is heavily commented at every step to easily explain what is happening.
 - If you switch away from ${resolvedLanguage}, explicitly state the language used and why.
 
 ${buildContextBlock('Conversation history', contextString)}${buildContextBlock('Additional context', additionalContext)}`.trim();
