@@ -16,7 +16,14 @@ function getDefaultAppState() {
     assemblyAiSpeechModel: null,
     programmingLanguage: null,
     windowOpacityLevel: 10,
-    themePreference: null
+    themePreference: null,
+    contextProfile: {
+      resumeText: null,
+      strengths: null,
+      weaknesses: null,
+      pastExperiences: null,
+      additionalContext: null
+    }
   };
 }
 
@@ -72,6 +79,15 @@ function sanitizeAppState(state) {
     const themePreference = String(state.themePreference ?? '').trim().toLowerCase();
     if (themePreference === 'dark' || themePreference === 'light') {
       nextState.themePreference = themePreference;
+    }
+
+    if (state.contextProfile && typeof state.contextProfile === 'object') {
+      const keys = ['resumeText', 'strengths', 'weaknesses', 'pastExperiences', 'additionalContext'];
+      for (const key of keys) {
+        if (typeof state.contextProfile[key] === 'string') {
+          nextState.contextProfile[key] = state.contextProfile[key].trim() || null;
+        }
+      }
     }
   }
 

@@ -349,7 +349,8 @@ class GeminiService {
       transcriptContext: options.transcriptContext || '',
       sessionSummary: options.sessionSummary || '',
       screenshotCount: options.screenshotCount || 0,
-      mode: options.mode || 'best-next-answer'
+      mode: options.mode || 'best-next-answer',
+      contextProfile: options.contextProfile
     });
 
     const streamOptions = { onChunk: options.onChunk };
@@ -367,7 +368,8 @@ class GeminiService {
       transcriptContext: options.transcriptContext || '',
       sessionSummary: options.sessionSummary || '',
       screenshotCount: options.screenshotCount || imageParts.length,
-      mode: options.mode || 'best-next-answer'
+      mode: options.mode || 'best-next-answer',
+      contextProfile: options.contextProfile
     });
 
     const streamOptions = { onChunk: options.onChunk };
@@ -386,7 +388,8 @@ class GeminiService {
       : this.getContextString();
     const prompt = buildSuggestResponsePrompt({
       contextString,
-      context
+      context,
+      contextProfile: options.contextProfile
     });
 
     const streamOptions = { onChunk: options.onChunk };

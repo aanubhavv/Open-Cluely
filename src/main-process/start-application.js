@@ -1,4 +1,4 @@
-﻿const {
+const {
   app,
   dialog,
   desktopCapturer,
@@ -193,7 +193,8 @@ async function startApplication() {
     geminiRuntime,
     assemblyAiService,
     sendToRenderer,
-    quitApplication
+    quitApplication,
+    getAppState: () => appState
   });
 
   registerAssemblyAiIpc({

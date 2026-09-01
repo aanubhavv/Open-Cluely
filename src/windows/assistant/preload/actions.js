@@ -182,6 +182,24 @@ function createInvokeActions(ipcRenderer) {
       channel: 'close-app',
       label: 'closeApp',
       fallback: (error) => ({ error: error.message })
+    }),
+
+    getContextProfile: invokeWithFallback(ipcRenderer, {
+      channel: 'get-context-profile',
+      label: 'getContextProfile',
+      fallback: (error) => ({ error: error.message })
+    }),
+
+    saveContextProfile: invokeWithFallback(ipcRenderer, {
+      channel: 'save-context-profile',
+      label: 'saveContextProfile',
+      fallback: (error) => ({ success: false, error: error.message })
+    }),
+
+    selectAndParsePdf: invokeWithFallback(ipcRenderer, {
+      channel: 'select-and-parse-pdf',
+      label: 'selectAndParsePdf',
+      fallback: (error) => ({ success: false, error: error.message })
     })
   };
 }

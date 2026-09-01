@@ -327,7 +327,50 @@
           <div id="settings-shortcuts-list" class="settings-shortcuts-list"></div>
           <div class="settings-helper-text">Shortcuts are read-only here. Edit <code>src/config.js</code> to customize.</div>
         </div>
+        <div class="settings-group">
+          <button id="open-context-profile-btn" class="save-settings-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">Edit Context Profile</button>
+        </div>
         <button id="save-settings-btn" class="save-settings-btn">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Context Profile Panel -->
+    <div id="context-profile-panel" class="settings-panel hidden">
+      <div class="settings-header">
+        <span class="settings-title">Context Profile</span>
+        <button id="close-context-profile" class="close-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.42 1.42L10.59 12l-4.9 4.89a1 1 0 0 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4Z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-group">
+          <label class="settings-label">Resume PDF</label>
+          <div class="settings-input-row">
+            <button id="cp-upload-pdf-btn" class="action-btn" style="flex: 1; justify-content: center;">Upload PDF</button>
+          </div>
+          <div id="cp-resume-status" class="settings-helper-text">No PDF uploaded.</div>
+          <!-- Hidden field to store parsed text -->
+          <input type="hidden" id="cp-resume-text" value="" />
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Strengths</label>
+          <textarea id="cp-strengths" class="settings-input" rows="3"></textarea>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Weaknesses</label>
+          <textarea id="cp-weaknesses" class="settings-input" rows="3"></textarea>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Past Experiences</label>
+          <textarea id="cp-past-experiences" class="settings-input" rows="3"></textarea>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Additional Context</label>
+          <textarea id="cp-additional-context" class="settings-input" rows="3"></textarea>
+        </div>
+        <button id="save-context-profile-btn" class="save-settings-btn">Save Profile</button>
       </div>
     </div>
 

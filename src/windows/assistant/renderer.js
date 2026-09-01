@@ -9,6 +9,7 @@ import { setupEventListeners as setupEventListenersModule } from './renderer/fea
 import { setupIpcListeners as setupIpcListenersModule } from './renderer/features/listeners/ipc-listeners.js';
 import { createShortcutManager } from './renderer/features/settings/shortcut-manager.js';
 import { createSettingsPanelManager } from './renderer/features/settings/settings-panel-manager.js';
+import { createContextProfileManager } from './renderer/features/settings/context-profile-manager.js';
 import { createTranscriptionManager } from './renderer/features/transcription/transcription-manager.js';
 
 import {
@@ -134,6 +135,19 @@ const settingWindowOpacityValue = document.getElementById('setting-window-opacit
 const quickWindowOpacity = document.getElementById('quick-window-opacity');
 const settingsShortcutsList = document.getElementById('settings-shortcuts-list');
 
+// Context Profile
+const openContextProfileBtn = document.getElementById('open-context-profile-btn');
+const contextProfilePanel = document.getElementById('context-profile-panel');
+const closeContextProfileBtn = document.getElementById('close-context-profile');
+const saveContextProfileBtn = document.getElementById('save-context-profile-btn');
+const cpUploadPdfBtn = document.getElementById('cp-upload-pdf-btn');
+const cpResumeStatus = document.getElementById('cp-resume-status');
+const cpResumeText = document.getElementById('cp-resume-text');
+const cpStrengths = document.getElementById('cp-strengths');
+const cpWeaknesses = document.getElementById('cp-weaknesses');
+const cpPastExperiences = document.getElementById('cp-past-experiences');
+const cpAdditionalContext = document.getElementById('cp-additional-context');
+
 // Timer
 let startTime = Date.now();
 let timerInterval;
@@ -201,6 +215,20 @@ const settingsPanelManager = createSettingsPanelManager({
         applyApiKeyAvailabilityFromSettings(settings);
         updateUI();
     }
+});
+const contextProfileManager = createContextProfileManager({
+    openBtn: openContextProfileBtn,
+    panel: contextProfilePanel,
+    closeBtn: closeContextProfileBtn,
+    saveBtn: saveContextProfileBtn,
+    uploadPdfBtn: cpUploadPdfBtn,
+    resumeStatus: cpResumeStatus,
+    resumeTextEl: cpResumeText,
+    strengthsEl: cpStrengths,
+    weaknessesEl: cpWeaknesses,
+    pastExperiencesEl: cpPastExperiences,
+    additionalContextEl: cpAdditionalContext,
+    showFeedback: (message, type) => showFeedback(message, type)
 });
 const transcriptionManager = createTranscriptionManager({
     transcriptionSourceState,

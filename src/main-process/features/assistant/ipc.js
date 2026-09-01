@@ -5,7 +5,8 @@ function registerAssistantIpc({
   geminiRuntime,
   assemblyAiService,
   sendToRenderer,
-  quitApplication
+  quitApplication,
+  getAppState
 }) {
   let chatContext = [];
 
@@ -252,6 +253,7 @@ function registerAssistantIpc({
               sessionSummary,
               screenshotCount: imageParts.length,
               mode,
+              contextProfile: getAppState()?.contextProfile,
               onChunk
             });
           });
@@ -270,6 +272,7 @@ function registerAssistantIpc({
             sessionSummary,
             screenshotCount: usedScreenshots ? usedScreenshotCount : 0,
             mode,
+            contextProfile: getAppState()?.contextProfile,
             onChunk
           });
         });
@@ -347,6 +350,7 @@ function registerAssistantIpc({
 
         return geminiService.suggestResponse(contextPrompt, {
           contextString: contextStringOverride,
+          contextProfile: getAppState()?.contextProfile,
           onChunk
         });
       });

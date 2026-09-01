@@ -8,6 +8,22 @@ function buildContextBlock(label, content) {
   return normalizedContent ? `${label}:\n${normalizedContent}\n\n` : '';
 }
 
+function buildContextProfileText(contextProfile) {
+  if (!contextProfile) return '';
+  const { resumeText, strengths, weaknesses, pastExperiences, additionalContext } = contextProfile;
+  let text = '';
+  if (resumeText) text += `Resume:\n${resumeText}\n\n`;
+  if (strengths) text += `Strengths:\n${strengths}\n\n`;
+  if (weaknesses) text += `Weaknesses:\n${weaknesses}\n\n`;
+  if (pastExperiences) text += `Past Experiences:\n${pastExperiences}\n\n`;
+  if (additionalContext) text += `Additional Context:\n${additionalContext}\n\n`;
+  
+  if (text) {
+    return `=== USER CONTEXT PROFILE ===\nThe following is personal background information about the user. Use this context to personalize your responses, answer questions about their past experience, and align with their strengths/weaknesses:\n${text}`.trim() + '\n\n';
+  }
+  return '';
+}
+
 function getCodeFenceLanguage(programmingLanguage) {
   const resolvedLanguage = resolveProgrammingLanguage(programmingLanguage);
 
@@ -78,7 +94,8 @@ function buildAskAiSessionPrompt({
   transcriptContext = '',
   sessionSummary = '',
   screenshotCount = 0,
-  programmingLanguage
+  programmingLanguage,
+  contextProfile
 } = {}) {
   const resolvedLanguage = resolveProgrammingLanguage(programmingLanguage);
   const codeFenceLanguage = getCodeFenceLanguage(resolvedLanguage);
@@ -86,6 +103,7 @@ function buildAskAiSessionPrompt({
   return `
 You are Invisibrain, an expert AI assistant for technical interviews, coding sessions, meetings, and problem-solving.
 
+${buildContextProfileText(contextProfile)}
 ${buildProgrammingLanguagePreference(resolvedLanguage)}
 
 === WHAT YOU HAVE ===
@@ -235,11 +253,13 @@ ${buildContextBlock('Conversation history', contextString)}${buildContextBlock('
 // ─── SUGGEST ──────────────────────────────────────────────────────────────────
 // Uses only transcript context.
 // Goal: read the conversation flow and suggest exactly what to say next.
-function buildSuggestResponsePrompt({ contextString = '', transcriptContext = '', context = '' } = {}) {
+function buildSuggestResponsePrompt({ contextString = '', transcriptContext = '', context = '', contextProfile } = {}) {
   const fullTranscript = transcriptContext || context;
 
   return `
 You are Invisibrain, a real-time conversation coach helping during technical interviews, coding discussions, and professional meetings.
+
+${buildContextProfileText(contextProfile)}
 
 === YOUR TASK ===
 Read the full transcript below and suggest the best thing the user should say next.

@@ -138,6 +138,68 @@ function registerSettingsIpc({
       return { success: false, error: error.message };
     }
   });
+
+  ipcMain.handle('get-context-profile', () => {
+    const appState = getAppState();
+    return appState?.contextProfile || {
+      resumeText: null,
+      strengths: null,
+      weaknesses: null,
+      pastExperiences: null,
+      additionalContext: null
+    };
+  });
+
+  ipcMain.handle('save-context-profile', async (_event, payload) => {
+    try {
+      const appState = getAppState();
+      const nextState = {
+        contextProfile: {
+          ...(appState?.contextProfile || {}),
+          ...payload
+        }
+      };
+      
+      const updatedState = saveAppState(app, nextState);
+      setAppState(updatedState);
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving context profile:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('select-and-parse-pdf', async () => {
+    try {
+      const { dialog } = require('electron');
+      const PDFParser = require('pdf2json');
+
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'PDFs', extensions: ['pdf'] }]
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, canceled: true };
+      }
+
+      const filePath = result.filePaths[0];
+      
+      const parsedText = await new Promise((resolve, reject) => {
+        const pdfParser = new PDFParser(this, 1);
+        pdfParser.on('pdfParser_dataError', errData => reject(errData.parserError));
+        pdfParser.on('pdfParser_dataReady', () => {
+          resolve(pdfParser.getRawTextContent());
+        });
+        pdfParser.loadPDF(filePath);
+      });
+      
+      return { success: true, text: parsedText, filePath };
+    } catch (error) {
+      console.error('Error parsing PDF:', error);
+      return { success: false, error: error.message || error.toString() };
+    }
+  });
 }
 
 module.exports = {
