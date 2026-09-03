@@ -51,6 +51,7 @@ const transcriptBufferManager = createTranscriptBufferManager({
             segments,
             chars: text.length
         });
+        updatePill2Transcript(text, false);
     },
     onFlush: ({ source, text, reason, segments }) => {
         if (source === 'system') {
@@ -65,15 +66,13 @@ const transcriptBufferManager = createTranscriptBufferManager({
             chars: text.length
         });
         showFeedback('Captured', 'success');
+        updatePill2Transcript(text, true);
     }
 });
 
 
 // DOM elements
 const statusText = document.getElementById('status-text');
-const screenshotCount = document.getElementById('screenshot-count');
-const resultsPanel = document.getElementById('results-panel');
-const resultText = document.getElementById('result-text');
 const loadingOverlay = document.getElementById('loading-overlay');
 const emergencyOverlay = document.getElementById('emergency-overlay');
 const chatContainer = document.getElementById('chat-container');
@@ -84,32 +83,45 @@ const chatManualSend = document.getElementById('chat-manual-send');
 const transcriptionToggle = document.getElementById('transcription-toggle');
 const sourceSystemToggle = document.getElementById('source-system-toggle');
 const sourceMicToggle = document.getElementById('source-mic-toggle');
-const monitorMasterState = document.getElementById('monitor-master-state');
-const monitorStatusSystem = document.getElementById('monitor-status-system');
-const monitorStatusMic = document.getElementById('monitor-status-mic');
-const monitorLiveSystem = document.getElementById('monitor-live-system');
-const monitorLiveMic = document.getElementById('monitor-live-mic');
-const monitorLogList = document.getElementById('monitor-log-list');
-const windowResizeHandles = document.querySelectorAll('[data-resize-handle]');
+
+const windowResizeHandles = []; // Removed in UI redesign
 
 const screenshotBtn = document.getElementById('screenshot-btn');
 const analyzeBtn = document.getElementById('analyze-btn');
-const screenAiBtn = document.getElementById('screen-ai-btn');
 const clearBtn = document.getElementById('clear-btn');
-const hideBtn = document.getElementById('hide-btn');
-const closeResultsBtn = document.getElementById('close-results');
 const closeAppBtn = document.getElementById('close-app-btn');
 const closeConfirmationDialog = document.getElementById('close-confirmation-dialog');
 const cancelCloseBtn = document.getElementById('cancel-close-btn');
 const confirmCloseBtn = document.getElementById('confirm-close-btn');
-
-// New Cluely-style buttons
-const suggestBtn = document.getElementById('suggest-btn');
-const notesBtn = document.getElementById('notes-btn');
-const insightsBtn = document.getElementById('insights-btn');
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const clickThroughBtn = document.getElementById('click-through-btn');
-const noFocusBtn = document.getElementById('no-focus-btn');
+
+// Removed buttons - set to null to avoid ReferenceError
+const screenAiBtn = null;
+const hideBtn = null;
+const closeResultsBtn = null;
+const suggestBtn = null;
+const notesBtn = null;
+const insightsBtn = null;
+const themeToggleBtn = null;
+const noFocusBtn = null;
+const screenshotCount = null;
+const resultsPanel = null;
+
+// New Pill DOM Elements
+const pill1Controls = document.getElementById('pill-1-controls');
+const pill2Listening = document.getElementById('pill-2-listening');
+const pill3Content = document.getElementById('pill-3-content');
+const pill2TranscriptText = document.getElementById('pill-2-transcript-text');
+
+const chatModeBtn = document.getElementById('chat-mode-btn');
+const settingsModeBtn = document.getElementById('settings-mode-btn');
+const expandChatBtn = document.getElementById('expand-chat-btn');
+const dragHandleBtn = document.getElementById('drag-handle-btn');
+
+const viewAnswer = document.getElementById('view-answer');
+const viewChat = document.getElementById('view-chat');
+const viewSettings = document.getElementById('view-settings');
+const resultText = document.getElementById('result-text');
 
 // Settings elements
 const settingsBtn = document.getElementById('settings-btn');
@@ -240,19 +252,75 @@ const transcriptionManager = createTranscriptionManager({
     transcriptionToggle,
     sourceSystemToggle,
     sourceMicToggle,
-    monitorMasterState,
-    monitorStatusSystem,
-    monitorStatusMic,
-    monitorLiveSystem,
-    monitorLiveMic,
-    monitorLogList,
+    monitorMasterState: null,
+    monitorStatusSystem: null,
+    monitorStatusMic: null,
+    monitorLiveSystem: null,
+    monitorLiveMic: null,
+    monitorLogList: null,
     addChatMessage: (type, content, options) => addChatMessage(type, content, options),
     showFeedback: (message, type) => showFeedback(message, type)
 });
 
+// PILL UI LOGIC
+function setPillVisibility(pill, isVisible) {
+    if (pill) {
+        if (isVisible) {
+            pill.classList.remove('hidden');
+        } else {
+            pill.classList.add('hidden');
+        }
+    }
+}
+
+function showPill3View(viewToShow) {
+    [viewAnswer, viewChat, viewSettings].forEach(view => {
+        if (view) view.classList.add('hidden');
+    });
+    if (viewToShow) {
+        viewToShow.classList.remove('hidden');
+        setPillVisibility(pill3Content, true);
+    } else {
+        setPillVisibility(pill3Content, false);
+    }
+}
+
+let activePill3View = null;
+function togglePill3View(view) {
+    if (activePill3View === view) {
+        activePill3View = null;
+        showPill3View(null);
+    } else {
+        activePill3View = view;
+        showPill3View(view);
+    }
+}
+
+function updatePill2Transcript(text, isFinal) {
+    if (!pill2TranscriptText) return;
+    const cleanText = text ? text.trim() : '';
+    if (!cleanText) return;
+    
+    pill2TranscriptText.innerHTML = '';
+    const span = document.createElement('span');
+    if (!isFinal) {
+        span.className = 'muted';
+    }
+    span.textContent = cleanText;
+    pill2TranscriptText.appendChild(span);
+}
+
+window.updatePill2Transcript = updatePill2Transcript; // expose for transcript callbacks
+
+function updatePill2Visibility() {
+    const isTranscribing = transcriptionSourceState.selectedSources.system || transcriptionSourceState.selectedSources.mic;
+    setPillVisibility(pill2Listening, isTranscribing);
+}
+window.updatePill2Visibility = updatePill2Visibility;
+
 // Initialize
 async function init() {
-    console.log('Initializing renderer with Vosk Live Transcription...');
+    console.log('Initializing renderer with Pill-Based UI...');
 
     if (typeof window.electronAPI !== 'undefined') {
         console.log('electronAPI is available');
@@ -273,6 +341,49 @@ async function init() {
     transcriptionManager.updateTranscriptionUI();
     transcriptionManager.renderMonitorState();
     startTimer();
+    
+    // UI Initialization
+    setPillVisibility(pill1Controls, true);
+    setPillVisibility(pill2Listening, false);
+    setPillVisibility(pill3Content, false);
+    
+    // Pill Toggle Event Listeners
+    chatModeBtn?.addEventListener('click', () => {
+        togglePill3View(viewChat);
+        chatModeBtn.classList.toggle('selected', activePill3View === viewChat);
+        settingsModeBtn?.classList.remove('selected');
+    });
+
+    settingsModeBtn?.addEventListener('click', () => {
+        togglePill3View(viewSettings);
+        settingsModeBtn.classList.toggle('selected', activePill3View === viewSettings);
+        chatModeBtn?.classList.remove('selected');
+    });
+
+    analyzeBtn?.addEventListener('click', () => {
+        if (activePill3View !== viewChat) {
+            togglePill3View(viewChat);
+        }
+        chatModeBtn?.classList.add('selected');
+        settingsModeBtn?.classList.remove('selected');
+    });
+
+    expandChatBtn?.addEventListener('click', () => {
+        if (activePill3View !== viewChat) {
+            togglePill3View(viewChat);
+            chatModeBtn?.classList.add('selected');
+            settingsModeBtn?.classList.remove('selected');
+        }
+    });
+
+    clearBtn?.addEventListener('click', () => {
+        if (activePill3View) {
+            togglePill3View(activePill3View); // toggles it off
+        }
+        chatModeBtn?.classList.remove('selected');
+        settingsModeBtn?.classList.remove('selected');
+        analyzeBtn?.classList.remove('selected');
+    });
 
     document.body.style.visibility = 'visible';
     document.body.style.display = 'block';
@@ -282,10 +393,8 @@ async function init() {
         app.style.display = 'flex';
     }
 
-    console.log('Renderer initialized - Ready for live transcription!');
+    console.log('Renderer initialized');
     showFeedback('Ready - click transcription to start', 'success');
-    addMonitorLog('info', 'init', 'Renderer initialized');
-    addMonitorLog('info', 'source-defaults', 'Default sources: Host on, Mic off');
 }
 
 function updateWindowOpacityValueLabel(value) {

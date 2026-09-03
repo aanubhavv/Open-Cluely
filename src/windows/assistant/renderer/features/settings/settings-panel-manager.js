@@ -165,26 +165,38 @@ export function createSettingsPanelManager({
 
     function populateGeminiModelOptions(models, selectedModel) {
         if (!settingGeminiModel) {
+            console.error('settingGeminiModel is falsy inside populateGeminiModelOptions');
             return;
         }
 
         settingGeminiModel.innerHTML = '';
 
-        const configuredModels = Array.isArray(models) ? models : [];
-        if (configuredModels.length === 0) {
-            throw new Error('Gemini models are not configured.');
+        try {
+            console.log('DEBUG populateGeminiModelOptions models:', models);
+            const configuredModels = Array.isArray(models) ? models : [];
+            if (configuredModels.length === 0) {
+                console.error('DEBUG: Gemini models are empty array or undefined. Cannot populate.');
+                // Don't throw here so we don't break the whole settings panel
+                const fallbackOption = document.createElement('option');
+                fallbackOption.value = selectedModel || 'gemini-2.5-flash-lite';
+                fallbackOption.textContent = selectedModel || 'gemini-2.5-flash-lite';
+                settingGeminiModel.appendChild(fallbackOption);
+                return;
+            }
+
+            configuredModels.forEach((modelName) => {
+                const option = document.createElement('option');
+                option.value = modelName;
+                option.textContent = modelName;
+                settingGeminiModel.appendChild(option);
+            });
+
+            settingGeminiModel.value = configuredModels.includes(selectedModel)
+                ? selectedModel
+                : configuredModels[0];
+        } catch (error) {
+            console.error('Error populating gemini models:', error);
         }
-
-        configuredModels.forEach((modelName) => {
-            const option = document.createElement('option');
-            option.value = modelName;
-            option.textContent = modelName;
-            settingGeminiModel.appendChild(option);
-        });
-
-        settingGeminiModel.value = configuredModels.includes(selectedModel)
-            ? selectedModel
-            : configuredModels[0];
     }
 
     function populateProgrammingLanguageOptions(languages, selectedLanguage) {
@@ -194,21 +206,30 @@ export function createSettingsPanelManager({
 
         settingProgrammingLanguage.innerHTML = '';
 
-        const configuredLanguages = Array.isArray(languages) ? languages : [];
-        if (configuredLanguages.length === 0) {
-            throw new Error('Programming languages are not configured.');
+        try {
+            const configuredLanguages = Array.isArray(languages) ? languages : [];
+            if (configuredLanguages.length === 0) {
+                console.error('DEBUG: Programming languages are empty. Cannot populate.');
+                const fallbackOption = document.createElement('option');
+                fallbackOption.value = selectedLanguage || 'Python';
+                fallbackOption.textContent = selectedLanguage || 'Python';
+                settingProgrammingLanguage.appendChild(fallbackOption);
+                return;
+            }
+
+            configuredLanguages.forEach((languageName) => {
+                const option = document.createElement('option');
+                option.value = languageName;
+                option.textContent = languageName;
+                settingProgrammingLanguage.appendChild(option);
+            });
+
+            settingProgrammingLanguage.value = configuredLanguages.includes(selectedLanguage)
+                ? selectedLanguage
+                : configuredLanguages[0];
+        } catch (error) {
+            console.error('Error populating programming languages:', error);
         }
-
-        configuredLanguages.forEach((languageName) => {
-            const option = document.createElement('option');
-            option.value = languageName;
-            option.textContent = languageName;
-            settingProgrammingLanguage.appendChild(option);
-        });
-
-        settingProgrammingLanguage.value = configuredLanguages.includes(selectedLanguage)
-            ? selectedLanguage
-            : configuredLanguages[0];
     }
 
     function populateAssemblyAiSpeechModelOptions(models, selectedModel) {
@@ -218,21 +239,30 @@ export function createSettingsPanelManager({
 
         settingAssemblyModel.innerHTML = '';
 
-        const configuredModels = Array.isArray(models) ? models : [];
-        if (configuredModels.length === 0) {
-            throw new Error('AssemblyAI speech models are not configured.');
+        try {
+            const configuredModels = Array.isArray(models) ? models : [];
+            if (configuredModels.length === 0) {
+                console.error('DEBUG: AssemblyAI models are empty. Cannot populate.');
+                const fallbackOption = document.createElement('option');
+                fallbackOption.value = selectedModel || 'universal-streaming-english';
+                fallbackOption.textContent = selectedModel || 'universal-streaming-english';
+                settingAssemblyModel.appendChild(fallbackOption);
+                return;
+            }
+
+            configuredModels.forEach((modelName) => {
+                const option = document.createElement('option');
+                option.value = modelName;
+                option.textContent = modelName;
+                settingAssemblyModel.appendChild(option);
+            });
+
+            settingAssemblyModel.value = configuredModels.includes(selectedModel)
+                ? selectedModel
+                : configuredModels[0];
+        } catch (error) {
+            console.error('Error populating AssemblyAI models:', error);
         }
-
-        configuredModels.forEach((modelName) => {
-            const option = document.createElement('option');
-            option.value = modelName;
-            option.textContent = modelName;
-            settingAssemblyModel.appendChild(option);
-        });
-
-        settingAssemblyModel.value = configuredModels.includes(selectedModel)
-            ? selectedModel
-            : configuredModels[0];
     }
 
     async function openSettings() {
@@ -242,6 +272,7 @@ export function createSettingsPanelManager({
 
         try {
             const settings = await window.electronAPI.getSettings();
+            console.log('DEBUG settings loaded:', settings);
             if (settings && !settings.error) {
                 applySettingsShortcutConfig?.(settings);
 
@@ -299,8 +330,11 @@ export function createSettingsPanelManager({
             const aiProvider = settingAiProvider ? settingAiProvider.value : 'gemini';
 
             if (aiProvider === 'gemini') {
-                if (!settingGeminiModel || settingGeminiModel.options.length === 0) {
-                    throw new Error('Gemini models are not configured.');
+                if (!settingGeminiModel) {
+                    throw new Error('settingGeminiModel DOM element is null or undefined.');
+                }
+                if (settingGeminiModel.options.length === 0) {
+                    throw new Error(`Gemini models are not configured. options.length is 0. settingGeminiModel is a ${settingGeminiModel.tagName}`);
                 }
             }
 

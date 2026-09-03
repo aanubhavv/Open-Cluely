@@ -102,6 +102,10 @@ export function createTranscriptionManager({
             sourceMicToggle.classList.toggle('selected', selectedSources.mic);
             sourceMicToggle.classList.toggle('running', isMicActive);
         }
+        
+        if (typeof window.updatePill2Visibility === 'function') {
+            window.updatePill2Visibility();
+        }
     }
 
     function renderMonitorState() {
@@ -471,6 +475,10 @@ export function createTranscriptionManager({
         const icon = source === 'system' ? '\u{1F50A}' : '\u{1F3A4}';
         monitorLastText[source] = `Live: ${trimmed}`;
         renderMonitorState();
+        
+        if (typeof window.updatePill2Transcript === 'function') {
+            window.updatePill2Transcript(trimmed, false);
+        }
 
         const distanceFromBottom = chatMessagesElement.scrollHeight - chatMessagesElement.clientHeight - chatMessagesElement.scrollTop;
         const shouldAutoScroll = distanceFromBottom <= 40;
