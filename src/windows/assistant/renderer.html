@@ -236,6 +236,46 @@
           </div>
         </div>
       </div>
+      <!-- CONTEXT PROFILE MODE -->
+      <div id="view-context-profile" class="pill-3-view hidden">
+        <div id="context-profile-panel" class="settings-panel">
+          <div class="settings-header">
+            <span class="settings-title">Context Profile</span>
+            <button id="close-context-profile" class="close-btn" type="button" aria-label="Close context profile">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.42 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9 4.89-4.89a1 1 0 0 0 0-1.42Z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="settings-body">
+            <div class="settings-group">
+              <label class="settings-label" for="cp-upload-pdf-btn">Resume PDF</label>
+              <div class="settings-input-row">
+                <button id="cp-upload-pdf-btn" type="button" class="action-btn" style="flex: 1; justify-content: center;">Upload PDF</button>
+              </div>
+              <div id="cp-resume-status" class="settings-helper-text">No PDF uploaded.</div>
+              <input type="hidden" id="cp-resume-text" value="" />
+            </div>
+            <div class="settings-group">
+              <label class="settings-label" for="cp-strengths">Strengths</label>
+              <textarea id="cp-strengths" class="settings-input" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label" for="cp-weaknesses">Weaknesses</label>
+              <textarea id="cp-weaknesses" class="settings-input" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label" for="cp-past-experiences">Past Experiences</label>
+              <textarea id="cp-past-experiences" class="settings-input" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label" for="cp-additional-context">Additional Context</label>
+              <textarea id="cp-additional-context" class="settings-input" rows="3"></textarea>
+            </div>
+            <button id="save-context-profile-btn" type="button" class="save-settings-btn">Save Profile</button>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- Hidden status text for feedback -->

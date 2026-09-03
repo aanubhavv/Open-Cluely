@@ -10,7 +10,9 @@ export function createContextProfileManager({
   weaknessesEl,
   pastExperiencesEl,
   additionalContextEl,
-  showFeedback
+  showFeedback,
+  onOpen,
+  onClose
 }) {
   let currentProfile = {};
 
@@ -72,11 +74,19 @@ export function createContextProfileManager({
 
   function openPanel() {
     loadProfile();
-    panel.classList.remove('hidden');
+    if (onOpen) {
+      onOpen();
+    } else {
+      panel.classList.remove('hidden');
+    }
   }
 
   function closePanel() {
-    panel.classList.add('hidden');
+    if (onClose) {
+      onClose();
+    } else {
+      panel.classList.add('hidden');
+    }
   }
 
   // Bind Events

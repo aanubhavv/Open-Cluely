@@ -213,11 +213,13 @@ body {
   box-shadow: none;
 }
 
-#view-settings {
+#view-settings,
+#view-context-profile {
   overflow: hidden;
 }
 
-#view-settings .settings-panel {
+#view-settings .settings-panel,
+#view-context-profile .settings-panel {
   position: relative;
   border-radius: 0;
   background: transparent;
@@ -230,7 +232,8 @@ body {
   height: 100%;
 }
 
-#view-settings .settings-body {
+#view-settings .settings-body,
+#view-context-profile .settings-body {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;

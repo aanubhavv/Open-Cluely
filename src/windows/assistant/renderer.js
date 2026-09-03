@@ -121,6 +121,7 @@ const dragHandleBtn = document.getElementById('drag-handle-btn');
 const viewAnswer = document.getElementById('view-answer');
 const viewChat = document.getElementById('view-chat');
 const viewSettings = document.getElementById('view-settings');
+const viewContextProfile = document.getElementById('view-context-profile');
 const resultText = document.getElementById('result-text');
 
 // Settings elements
@@ -240,7 +241,15 @@ const contextProfileManager = createContextProfileManager({
     weaknessesEl: cpWeaknesses,
     pastExperiencesEl: cpPastExperiences,
     additionalContextEl: cpAdditionalContext,
-    showFeedback: (message, type) => showFeedback(message, type)
+    showFeedback: (message, type) => showFeedback(message, type),
+    onOpen: () => {
+        togglePill3View(viewContextProfile);
+    },
+    onClose: () => {
+        if (activePill3View === viewContextProfile) {
+            togglePill3View(viewSettings); // return to settings when closed
+        }
+    }
 });
 const transcriptionManager = createTranscriptionManager({
     transcriptionSourceState,
@@ -274,7 +283,7 @@ function setPillVisibility(pill, isVisible) {
 }
 
 function showPill3View(viewToShow) {
-    [viewAnswer, viewChat, viewSettings].forEach(view => {
+    [viewAnswer, viewChat, viewSettings, viewContextProfile].forEach(view => {
         if (view) view.classList.add('hidden');
     });
     if (viewToShow) {
