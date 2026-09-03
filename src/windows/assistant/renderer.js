@@ -358,6 +358,9 @@ async function init() {
         togglePill3View(viewSettings);
         settingsModeBtn.classList.toggle('selected', activePill3View === viewSettings);
         chatModeBtn?.classList.remove('selected');
+        if (activePill3View === viewSettings) {
+            openSettings();
+        }
     });
 
     analyzeBtn?.addEventListener('click', () => {

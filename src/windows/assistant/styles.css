@@ -1736,7 +1736,8 @@ body.chat-resizing * {
 
 .settings-input:focus {
   border-color: rgba(59, 130, 246, 0.6);
-  background: var(--glass-input-focus-bg);
+  /* Keep the select's custom arrow and its no-repeat setting intact. */
+  background-color: var(--glass-input-focus-bg);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
@@ -1748,10 +1749,16 @@ select.settings-input {
   cursor: default !important;
   -webkit-appearance: none;
   appearance: none;
+  color: rgba(255, 255, 255, 0.95);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23e2e8f0' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 6px center;
   padding-right: 22px;
+}
+
+select.settings-input option {
+  background: #1e293b;
+  color: #e2e8f0;
 }
 
 .settings-range {
@@ -2177,6 +2184,8 @@ body.theme-dark .settings-input::placeholder {
 
 body.theme-dark select.settings-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23e2e8f0' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
 }
 
 body.theme-dark .settings-shortcut-row {
