@@ -359,43 +359,61 @@ async function init() {
     // Pill Toggle Event Listeners
     chatModeBtn?.addEventListener('click', () => {
         togglePill3View(viewChat);
-        chatModeBtn.classList.toggle('selected', activePill3View === viewChat);
-        settingsModeBtn?.classList.remove('selected');
+        chatModeBtn.classList.toggle('active', activePill3View === viewChat);
+        settingsModeBtn?.classList.remove('active');
+        analyzeBtn?.classList.remove('active');
     });
 
     settingsModeBtn?.addEventListener('click', () => {
         togglePill3View(viewSettings);
-        settingsModeBtn.classList.toggle('selected', activePill3View === viewSettings);
-        chatModeBtn?.classList.remove('selected');
+        settingsModeBtn.classList.toggle('active', activePill3View === viewSettings);
+        chatModeBtn?.classList.remove('active');
+        analyzeBtn?.classList.remove('active');
         if (activePill3View === viewSettings) {
             openSettings();
         }
     });
 
     analyzeBtn?.addEventListener('click', () => {
-        if (activePill3View !== viewChat) {
-            togglePill3View(viewChat);
+        if (activePill3View !== viewAnswer) {
+            togglePill3View(viewAnswer);
         }
-        chatModeBtn?.classList.add('selected');
-        settingsModeBtn?.classList.remove('selected');
+        analyzeBtn.classList.add('active');
+        chatModeBtn?.classList.remove('active');
+        settingsModeBtn?.classList.remove('active');
+        
+        // Trigger Ask AI logic immediately on opening this view if not already loading
+        if (!isAnalyzing && hasAiContextFn()) {
+            askAiWithSessionContext();
+        }
     });
+
+    const hasAiContextFn = () => {
+        const aiBundle = buildFilteredAiContextBundle({ charBudget: AI_CONTEXT_CHAR_BUDGET, emitTruncationLog: false });
+        return aiBundle.transcriptContext.length > 0 || aiBundle.enabledScreenshotIds.length > 0 || aiBundle.contextString.length > 0;
+    };
 
     expandChatBtn?.addEventListener('click', () => {
         if (activePill3View !== viewChat) {
             togglePill3View(viewChat);
-            chatModeBtn?.classList.add('selected');
-            settingsModeBtn?.classList.remove('selected');
+            chatModeBtn?.classList.add('active');
+            analyzeBtn?.classList.remove('active');
+            settingsModeBtn?.classList.remove('active');
         }
     });
 
-    clearBtn?.addEventListener('click', () => {
+    const pill3ClearBtn = document.getElementById('pill-3-clear-btn');
+    const closePill3 = () => {
         if (activePill3View) {
             togglePill3View(activePill3View); // toggles it off
         }
-        chatModeBtn?.classList.remove('selected');
-        settingsModeBtn?.classList.remove('selected');
-        analyzeBtn?.classList.remove('selected');
-    });
+        chatModeBtn?.classList.remove('active');
+        settingsModeBtn?.classList.remove('active');
+        analyzeBtn?.classList.remove('active');
+    };
+
+    clearBtn?.addEventListener('click', closePill3);
+    pill3ClearBtn?.addEventListener('click', closePill3);
 
     document.body.style.visibility = 'visible';
     document.body.style.display = 'block';
@@ -607,12 +625,26 @@ function createStreamHandler(actionId) {
 
     function start(headingPrefix) {
         accumulatedText = headingPrefix || '';
-        messageRecord = addChatMessage('ai-response', accumulatedText || '...');
+        
+        if (actionId === 'askAi') {
+            const contentArea = document.getElementById('answer-content-area');
+            if (contentArea) {
+                contentArea.innerHTML = '';
+            }
+        } else {
+            messageRecord = addChatMessage('ai-response', accumulatedText || '...');
+        }
 
         removeChunkListener = window.electronAPI.onAiStreamChunk((data) => {
             if (data.actionId !== actionId) return;
             accumulatedText += data.text;
-            if (messageRecord) {
+            
+            if (actionId === 'askAi') {
+                const contentArea = document.getElementById('answer-content-area');
+                if (contentArea) {
+                    contentArea.innerHTML = formatResponseHtml(accumulatedText);
+                }
+            } else if (messageRecord) {
                 chatUiManager.updateChatMessageContent(messageRecord.id, accumulatedText);
             }
             if (!loadingHidden) {
@@ -625,7 +657,12 @@ function createStreamHandler(actionId) {
     }
 
     function finalize(finalText) {
-        if (finalText && messageRecord) {
+        if (actionId === 'askAi') {
+            const contentArea = document.getElementById('answer-content-area');
+            if (contentArea) {
+                contentArea.innerHTML = formatResponseHtml(finalText);
+            }
+        } else if (finalText && messageRecord) {
             chatUiManager.updateChatMessageContent(messageRecord.id, finalText);
         }
     }
@@ -635,6 +672,15 @@ function createStreamHandler(actionId) {
             removeChunkListener();
             removeChunkListener = null;
         }
+    }
+    
+    // Simple inline formatter for Answer Area
+    function formatResponseHtml(text) {
+        let safe = escapeHtml(text);
+        safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        safe = safe.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        safe = safe.replace(/\n/g, '<br>');
+        return `<div class="font-body-base text-body-base text-on-surface leading-relaxed"><p class="mb-4">${safe}</p></div>`;
     }
 
     return { start, finalize, cleanup };
@@ -820,12 +866,18 @@ async function askAiAboutSpecificMessage(messageId) {
         try {
             setAnalyzing(true);
             showLoadingOverlay('Analyzing specific message...');
-            stream.start('**Answer for selected message:**\n\n');
+            
+            const questionText = document.getElementById('answer-question-text');
+            if (questionText) {
+                questionText.innerHTML = `<span class="text-tertiary-container">Question:</span> ${escapeHtml(message.content)}`;
+            }
+
+            stream.start('');
 
             const result = await window.electronAPI.askAiWithSessionContext(payload);
 
             if (result?.success && result?.text) {
-                stream.finalize(`**Answer for selected message:**\n\n${result.text}`);
+                stream.finalize(`${result.text}`);
                 showFeedback('Ask AI ready', 'success');
             } else {
                 throw new Error(result?.error || 'Ask AI failed');
@@ -864,15 +916,21 @@ async function askAiWithSessionContext() {
         try {
             setAnalyzing(true);
             showLoadingOverlay('Analyzing full session context...');
-            stream.start('**Best Next Answer:**\n\n');
+            
+            const questionText = document.getElementById('answer-question-text');
+            if (questionText) {
+                const heading = payload.enabledScreenshotIds.length > 0
+                    ? 'Best Next Answer (Transcript + Screen)'
+                    : 'Best Next Answer (Transcript)';
+                questionText.innerHTML = `<span class="text-tertiary-container">Action:</span> ${heading}`;
+            }
+            
+            stream.start('');
 
             const result = await window.electronAPI.askAiWithSessionContext(payload);
 
             if (result?.success && result?.text) {
-                const heading = result.usedScreenshots
-                    ? '**Best Next Answer (Transcript + Screen):**'
-                    : '**Best Next Answer (Transcript):**';
-                stream.finalize(`${heading}\n\n${result.text}`);
+                stream.finalize(`${result.text}`);
                 showFeedback('Ask AI ready', 'success');
             } else {
                 throw new Error(result?.error || 'Ask AI failed');
@@ -1217,8 +1275,15 @@ function showFeedback(message, type = 'info') {
 }
 
 function showLoadingOverlay(message = 'Analyzing screen...') {
-    if (loadingOverlay) {
-        // Update the loading text if custom message provided
+    const generatingState = document.getElementById('answer-generating-state');
+    const contentArea = document.getElementById('answer-content-area');
+    
+    if (generatingState && contentArea) {
+        generatingState.classList.remove('hidden');
+        contentArea.innerHTML = '';
+        contentArea.classList.add('hidden');
+    } else if (loadingOverlay) {
+        // Fallback for older UI
         const loadingTextElement = loadingOverlay.querySelector('.loading-text');
         if (loadingTextElement) {
             loadingTextElement.innerHTML = message;
@@ -1228,9 +1293,14 @@ function showLoadingOverlay(message = 'Analyzing screen...') {
 }
 
 function hideLoadingOverlay() {
-    if (loadingOverlay) {
+    const generatingState = document.getElementById('answer-generating-state');
+    const contentArea = document.getElementById('answer-content-area');
+    
+    if (generatingState && contentArea) {
+        generatingState.classList.add('hidden');
+        contentArea.classList.remove('hidden');
+    } else if (loadingOverlay) {
         loadingOverlay.classList.add('hidden');
-        // Reset to default text
         const loadingTextElement = loadingOverlay.querySelector('.loading-text');
         if (loadingTextElement) {
             loadingTextElement.innerHTML = 'Analyzing screen...';

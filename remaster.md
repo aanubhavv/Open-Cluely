@@ -1,6 +1,6 @@
 # Redesign Prompt: Pill-Based Overlay UI for Interview Assistant
 
-You are redesigning a floating, always-on-top Windows interview-assistant overlay. Replace the current design (persistent panel, visible resize handles, an always-open "AI assistant" window) with a new **pill-based system**: compact, rounded, collapsible bars that appear only when needed and stack vertically as more are opened.
+You are remastering a floating, always-on-top Windows interview-assistant overlay. Replace the current application (persistent panel, visible resize handles, an always-open "AI assistant" window) with a new **pill-based system**: compact, rounded, collapsible bars that appear only when needed and stack vertically as more are opened. use the design from stitch.
 
 ## Core principle
 - Only **one pill is visible by default** — a single, non-resizable top pill with no resize handles or extra chrome.

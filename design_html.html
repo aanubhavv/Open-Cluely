@@ -1,0 +1,313 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Parakeet AI - Interview Overlay</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#b3b1b1",
+                        "background": "#121414",
+                        "surface-container-low": "#1a1c1c",
+                        "on-background": "#e3e2e2",
+                        "on-primary-fixed": "#00210c",
+                        "surface-variant": "#343535",
+                        "on-surface-variant": "#bdcabc",
+                        "on-tertiary-fixed": "#1b1c1c",
+                        "on-primary-fixed-variant": "#005227",
+                        "inverse-on-surface": "#2f3131",
+                        "on-surface": "#e3e2e2",
+                        "tertiary-fixed": "#e4e2e1",
+                        "surface-tint": "#66dd8b",
+                        "on-error": "#690005",
+                        "surface-dim": "#121414",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#343535",
+                        "on-secondary-fixed-variant": "#474746",
+                        "surface-container-high": "#292a2a",
+                        "surface-container": "#1e2020",
+                        "error": "#ffb4ab",
+                        "surface": "#121414",
+                        "on-primary-container": "#005025",
+                        "secondary-container": "#474746",
+                        "on-tertiary-container": "#444444",
+                        "on-secondary-container": "#b7b5b4",
+                        "primary-fixed-dim": "#66dd8b",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "inverse-surface": "#e3e2e2",
+                        "primary": "#6ee591",
+                        "primary-fixed": "#83fba5",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "tertiary-fixed-dim": "#c8c6c6",
+                        "surface-bright": "#383939",
+                        "on-secondary": "#313030",
+                        "primary-container": "#50c878",
+                        "secondary": "#c8c6c5",
+                        "tertiary": "#cfcccc",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#3e4a3f",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-tertiary": "#303030",
+                        "inverse-primary": "#006d36",
+                        "outline": "#879487",
+                        "on-primary": "#003919"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "md": "16px",
+                        "container-max": "1440px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "code-block": ["JetBrains Mono"],
+                        "headline-md-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "code-inline": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "code-block": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-base": ["15px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "code-inline": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            /* Dimmed background to simulate overlay */
+            background-color: rgba(12, 12, 12, 0.8);
+            background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        
+        .glass-panel {
+            background: rgba(45, 45, 45, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .kbd-chip {
+            background-color: #121414;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #bdcabc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .overlay-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e3e2e2;
+            transition: all 0.2s ease;
+        }
+        
+        .overlay-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .overlay-btn.active {
+            background: rgba(80, 200, 120, 0.1);
+            border-color: #50C878;
+            color: #50C878;
+        }
+        
+        .overlay-btn.danger {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.2);
+            color: #ffb4ab;
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface antialiased">
+<!-- Top Control Bar (Pill) -->
+<div class="glass-panel rounded-full px-4 py-2 flex items-center gap-4 mb-4 z-50">
+<!-- Status Indicators -->
+<div class="flex items-center gap-2 pr-2 border-r border-outline-variant">
+<div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px] text-on-surface">desktop_windows</span>
+<span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-error"></span>
+</div>
+<div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px] text-on-surface">mic</span>
+<span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-error"></span>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="flex items-center gap-2">
+<button class="overlay-btn active flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium">
+                Answer
+                <span class="kbd-chip text-primary border-primary/30 bg-surface-container-high rounded-full">⌘ ↵</span>
+</button>
+<button class="overlay-btn flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium">
+                Screenshot
+                <span class="kbd-chip bg-surface-container-high rounded-full">⌘ ⇧ ↵</span>
+</button>
+<button class="overlay-btn flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border-dashed">
+                Chat
+                <span class="kbd-chip bg-surface-container-high rounded-full">⌘ ⇧ ⌫</span>
+</button>
+</div>
+<!-- Utility Actions -->
+<div class="flex items-center gap-2 pl-2 border-l border-outline-variant">
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">open_with</span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">push_pin</span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button class="overlay-btn danger flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium ml-2 bg-error text-on-error border-none hover:bg-error/90">
+                End
+            </button>
+</div>
+</div>
+<!-- Secondary Input/Context Bar -->
+<div class="glass-panel rounded-full px-4 py-2 flex items-center gap-3 mb-6 z-40 max-w-[800px] w-full mx-4">
+<div class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container text-primary-container">
+<span class="material-symbols-outlined text-[18px]">graphic_eq</span>
+</div>
+<div class="flex-1 flex items-center gap-2 overflow-hidden px-2">
+<span class="overlay-btn px-3 py-1 rounded-full text-sm whitespace-nowrap opacity-70">How would you</span>
+<span class="overlay-btn px-3 py-1 rounded-full text-sm whitespace-nowrap opacity-70">design a rate</span>
+<span class="overlay-btn px-3 py-1 rounded-full text-sm whitespace-nowrap opacity-70">limiter for a</span>
+<span class="overlay-btn px-3 py-1 rounded-full text-sm whitespace-nowrap opacity-70">public API?</span>
+</div>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-3">
+<button class="overlay-btn flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium">
+                Clear&nbsp;                <span class="kbd-chip bg-surface-container-high rounded-full"><span style="letter-spacing: 0.55px;">⌘ ⇧ ⌫</span></span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">open_in_full</span>
+</button>
+</div>
+</div>
+<!-- Main Content Window (Answer) -->
+<div class="glass-panel rounded-2xl w-full max-w-[900px] mx-4 overflow-hidden flex flex-col z-30">
+<!-- Window Header Controls -->
+<div class="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-surface-container-low/50">
+<div class="flex gap-2">
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<div class="flex items-center gap-2"><div class="flex items-center gap-2 mr-4 px-3 py-1 rounded-full bg-surface-container/50 border border-white/5"><label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant opacity-70">Opacity</label><input type="range" min="20" max="100" value="60" class="w-20 h-1 bg-outline-variant rounded-full appearance-none cursor-pointer accent-primary"></div>
+<button class="overlay-btn flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium">
+                    Clear <span class="kbd-chip scale-90 origin-right bg-surface-container-high rounded-full">⌘ ⇧ ⌫</span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">open_in_full</span>
+</button>
+</div>
+</div>
+<!-- Question Section -->
+<div class="px-6 py-5 border-b border-white/5 bg-[#1A1A1A]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-tertiary-container mt-1">forum</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">
+<span class="text-tertiary-container">Question:</span> How would you design a rate limiter for a public API?
+                    </h2>
+</div>
+<button class="text-on-surface-variant hover:text-primary-container transition-colors flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Answer Section -->
+<div class="px-6 py-6 bg-[#1A1A1A] flex-1">
+<div class="flex gap-3 mb-4">
+<span class="material-symbols-outlined text-[#FFD700] mt-1" style="font-variation-settings: 'FILL' 1;">star</span>
+<div class="font-body-base text-body-base text-on-surface leading-relaxed">
+<p class="mb-4">
+<span class="font-bold text-primary-fixed">Answer:</span> Token bucket per API key, stored in Redis.
+                    </p>
+<ul class="list-none space-y-2 mb-6 font-code-block text-code-block text-on-surface-variant">
+<li class="flex gap-2">
+<span class="text-primary-container">•</span>
+<span class="">Refill logic: R tokens/sec up to a burst of B; each request decrements atomically with a Lua script.</span>
+</li>
+<li class="flex gap-2">
+<span class="text-primary-container">•</span>
+<span class="">On empty: reject with 429 and a Retry-After header.</span>
+</li>
+<li class="flex gap-2">
+<span class="text-primary-container">•</span>
+<span class="">Scaling: shard by key hash and keep hot counters in memory with an async flush.</span>
+</li>
+</ul>
+<p class="text-on-surface">
+<span class="font-medium text-tertiary-container">Trade-off:</span> a sliding-window log is more precise but costs O(requests) memory.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<div class="px-6 py-3 bg-[#121414] border-t border-white/5 flex items-center justify-between text-xs text-on-surface-variant">
+<div class="flex items-center gap-3">
+<span class="">Answer</span>
+<span class="">·</span>
+<span class="">21:00</span>
+<div class="flex gap-2 ml-2">
+<button class="hover:text-primary-container transition-colors"><span class="material-symbols-outlined text-[16px]">thumb_up</span></button>
+<button class="hover:text-error transition-colors"><span class="material-symbols-outlined text-[16px]">thumb_down</span></button>
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</body></html>

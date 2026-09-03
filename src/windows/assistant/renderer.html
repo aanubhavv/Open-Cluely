@@ -1,299 +1,465 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en" style="">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Assistant</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="pill-styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-</head>
-<body class="theme-dark">
-  <div id="app" class="pills-container">
-    
-    <!-- PILL 1: CONTROLS -->
-    <div id="pill-1-controls" class="pill pill-controls">
-      <div class="action-buttons">
-        <!-- Mute Host -->
-        <button id="source-system-toggle" class="action-btn icon-btn source-toggle selected" title="Toggle Host Audio (Mute/Unmute)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-          </svg>
-        </button>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>AI Assistant</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pill-styles.css">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#b3b1b1",
+                        "background": "#121414",
+                        "surface-container-low": "#1a1c1c",
+                        "on-background": "#e3e2e2",
+                        "on-primary-fixed": "#00210c",
+                        "surface-variant": "#343535",
+                        "on-surface-variant": "#bdcabc",
+                        "on-tertiary-fixed": "#1b1c1c",
+                        "on-primary-fixed-variant": "#005227",
+                        "inverse-on-surface": "#2f3131",
+                        "on-surface": "#e3e2e2",
+                        "tertiary-fixed": "#e4e2e1",
+                        "surface-tint": "#66dd8b",
+                        "on-error": "#690005",
+                        "surface-dim": "#121414",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#343535",
+                        "on-secondary-fixed-variant": "#474746",
+                        "surface-container-high": "#292a2a",
+                        "surface-container": "#1e2020",
+                        "error": "#ffb4ab",
+                        "surface": "#121414",
+                        "on-primary-container": "#005025",
+                        "secondary-container": "#474746",
+                        "on-tertiary-container": "#444444",
+                        "on-secondary-container": "#b7b5b4",
+                        "primary-fixed-dim": "#66dd8b",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "inverse-surface": "#e3e2e2",
+                        "primary": "#6ee591",
+                        "primary-fixed": "#83fba5",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "tertiary-fixed-dim": "#c8c6c6",
+                        "surface-bright": "#383939",
+                        "on-secondary": "#313030",
+                        "primary-container": "#50c878",
+                        "secondary": "#c8c6c5",
+                        "tertiary": "#cfcccc",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#3e4a3f",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-tertiary": "#303030",
+                        "inverse-primary": "#006d36",
+                        "outline": "#879487",
+                        "on-primary": "#003919"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "md": "16px",
+                        "container-max": "1440px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "code-block": ["JetBrains Mono"],
+                        "headline-md-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "code-inline": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "code-block": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-base": ["15px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "code-inline": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: transparent;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            overflow: hidden;
+            -webkit-app-region: no-drag;
+        }
         
-        <!-- Mute User -->
-        <button id="source-mic-toggle" class="action-btn icon-btn source-toggle" title="Toggle User Audio (Mute/Unmute)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <path d="M12 19v4"/>
-            <path d="M8 23h8"/>
-          </svg>
-        </button>
+        .glass-panel {
+            background: rgba(45, 45, 45, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);
+        }
 
-        <!-- Connection Status -->
-        <button id="transcription-toggle" class="action-btn icon-btn transcription-btn" title="Toggle Transcription Connection">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 10v4" />
-            <path d="M7 7v10" />
-            <path d="M11 4v16" />
-            <path d="M15 7v10" />
-            <path d="M19 10v4" />
-          </svg>
-        </button>
+        .kbd-chip {
+            background-color: #121414;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #bdcabc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
 
-        <!-- Divider -->
-        <div class="divider"></div>
+        .overlay-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e3e2e2;
+            transition: all 0.2s ease;
+            -webkit-app-region: no-drag;
+        }
+        
+        .overlay-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
 
-        <!-- Answer / Ask AI -->
-        <button id="analyze-btn" class="action-btn label-btn primary-btn" title="Ask AI (Alt+Shift+A)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2.5 12a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" />
-          </svg>
-          <span class="btn-label">Answer</span>
-        </button>
+        .overlay-btn.active {
+            background: rgba(80, 200, 120, 0.1);
+            border-color: #50C878;
+            color: #50C878;
+        }
+        
+        .overlay-btn.danger {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.2);
+            color: #ffb4ab;
+        }
 
-        <!-- Screenshot -->
-        <button id="screenshot-btn" class="action-btn icon-btn" title="Capture Screenshot (Alt+Shift+S)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-          </svg>
-        </button>
+        /* Helpers for draggable regions */
+        .drag-region {
+            -webkit-app-region: drag;
+        }
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
 
-        <!-- Chat Mode Toggle -->
-        <button id="chat-mode-btn" class="action-btn label-btn" title="Toggle Chat Panel">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
-          </svg>
-          <span class="btn-label">Chat</span>
-        </button>
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface antialiased">
 
-        <!-- Divider -->
-        <div class="divider"></div>
+<div id="app" class="w-full flex flex-col items-center gap-2">
 
-        <!-- Move (Drag Handle) -->
-        <div id="drag-handle-btn" class="action-btn icon-btn drag-btn" title="Drag to Move">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/>
-          </svg>
-        </div>
-
-        <!-- Pin (Click-Through) -->
-        <button id="click-through-btn" class="action-btn icon-btn" title="Pin / Click-Through (Alt+Shift+Z)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
-          </svg>
-        </button>
-
-        <!-- Settings Mode Toggle -->
-        <button id="settings-mode-btn" class="action-btn icon-btn" title="Toggle Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
-          </svg>
-        </button>
-
-        <button id="close-app-btn" class="action-btn icon-btn danger-btn" title="Close App">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.42 1.42L10.59 12l-4.9 4.89a1 1 0 0 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4Z"/>
-          </svg>
-        </button>
-      </div>
+<!-- PILL 1: CONTROLS -->
+<div id="pill-1-controls" class="glass-panel rounded-full px-4 py-2 flex items-center gap-4 z-50">
+<!-- Status Indicators -->
+<div class="flex items-center gap-2 pr-2 border-r border-outline-variant">
+    <div id="source-system-toggle" class="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant cursor-pointer transition-colors no-drag" title="Toggle Host Audio (Mute/Unmute)">
+        <span class="material-symbols-outlined text-[18px] text-on-surface">desktop_windows</span>
+        <span id="system-error-dot" class="absolute top-0 right-0 w-2 h-2 rounded-full bg-error hidden"></span>
     </div>
-    
-    <!-- PILL 2: LISTENING / TRANSCRIPT -->
-    <div id="pill-2-listening" class="pill pill-listening hidden">
-      <div class="transcript-line" id="pill-2-transcript-text">
-        <span class="muted">No transcript yet...</span>
-      </div>
-      <div class="pill-2-actions">
-        <!-- Expand Button (Increases size of transcript/chat view) -->
-        <button id="expand-chat-btn" class="action-btn icon-btn subtle-btn" title="Expand View">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-          </svg>
-        </button>
-        <!-- Clear Button -->
-        <button id="clear-btn" class="action-btn icon-btn subtle-btn" title="Clear">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-        </button>
-      </div>
+    <div id="source-mic-toggle" class="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant cursor-pointer transition-colors no-drag" title="Toggle User Audio (Mute/Unmute)">
+        <span class="material-symbols-outlined text-[18px] text-on-surface">mic</span>
+        <span id="mic-error-dot" class="absolute top-0 right-0 w-2 h-2 rounded-full bg-error hidden"></span>
     </div>
+    <div id="transcription-toggle" class="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant cursor-pointer transition-colors no-drag" title="Toggle Transcription Connection">
+        <span class="material-symbols-outlined text-[18px] text-on-surface">graphic_eq</span>
+    </div>
+</div>
+<!-- Primary Actions -->
+<div class="flex items-center gap-2">
+    <button id="analyze-btn" class="overlay-btn flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium no-drag" title="Ask AI (Alt+Shift+A)">
+        Answer
+        <span class="kbd-chip text-primary border-primary/30 bg-surface-container-high rounded-full">⌘ ↵</span>
+    </button>
+    <button id="screenshot-btn" class="overlay-btn flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium no-drag" title="Capture Screenshot (Alt+Shift+S)">
+        Screenshot
+        <span class="kbd-chip bg-surface-container-high rounded-full">⌘ ⇧ ↵</span>
+    </button>
+    <button id="chat-mode-btn" class="overlay-btn flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border-dashed no-drag" title="Toggle Chat">
+        Chat
+        <span class="kbd-chip bg-surface-container-high rounded-full">⌘ ⇧ ⌫</span>
+    </button>
+</div>
+<!-- Utility Actions -->
+<div class="flex items-center gap-2 pl-2 border-l border-outline-variant">
+    <button id="drag-handle-btn" class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant drag-region cursor-move" title="Drag to Move">
+        <span class="material-symbols-outlined text-[18px]">open_with</span>
+    </button>
+    <button id="click-through-btn" class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant no-drag" title="Pin / Click-Through (Alt+Shift+Z)">
+        <span class="material-symbols-outlined text-[18px]">push_pin</span>
+    </button>
+    <button id="settings-mode-btn" class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant no-drag" title="Toggle Settings">
+        <span class="material-symbols-outlined text-[18px]">settings</span>
+    </button>
+    <button id="close-app-btn" class="overlay-btn danger flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium ml-2 bg-error/20 text-on-error border-none hover:bg-error/30 no-drag" title="Close App">
+        End
+    </button>
+</div>
+</div>
 
-    <!-- PILL 3: CONTENT (ANSWER / CHAT / SETTINGS) -->
-    <div id="pill-3-content" class="pill pill-content hidden">
-      <div id="loading-overlay" class="loading-overlay hidden">
-          <div class="loading-content">
-            <div class="analyzing-icon">&#x1F9E0;</div>
-            <div class="loading-text">Analyzing...</div>
-          </div>
-      </div>
-      
-      <!-- Opacity controls (visible across modes in Pill 3) -->
-      <div class="pill-3-header">
-        <div class="quick-opacity-control" title="Window Opacity">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="opacity: 0.8">
-            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-          </svg>
-          <input type="range" id="quick-window-opacity" class="quick-opacity-slider" min="1" max="10" step="1" value="10" aria-label="Window Opacity" />
+<!-- PILL 2: LISTENING / TRANSCRIPT -->
+<div id="pill-2-listening" class="glass-panel rounded-full px-4 py-2 flex items-center gap-3 z-40 max-w-[800px] w-full mx-4 hidden">
+<div class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container text-primary-container">
+<span class="material-symbols-outlined text-[18px]">graphic_eq</span>
+</div>
+<div id="pill-2-transcript-text" class="flex-1 flex items-center gap-2 overflow-hidden px-2 font-code-block text-sm opacity-70 whitespace-nowrap">
+    <span class="muted">No transcript yet...</span>
+</div>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-3">
+<button id="clear-btn" class="overlay-btn flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium no-drag">
+    Clear
+    <span class="kbd-chip bg-surface-container-high rounded-full">⌘ ⇧ ⌫</span>
+</button>
+<button id="expand-chat-btn" class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-on-surface-variant no-drag">
+    <span class="material-symbols-outlined text-[18px]">open_in_full</span>
+</button>
+</div>
+</div>
+
+<!-- PILL 3: CONTENT -->
+<div id="pill-3-content" class="glass-panel rounded-2xl w-full max-w-[900px] mx-4 overflow-hidden flex flex-col z-30 hidden" style="min-height: 400px; max-height: 80vh;">
+    <!-- Window Header Controls (Shared across modes) -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-surface-container-low/50">
+        <div class="flex gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant opacity-70" id="pill-3-title">AI Assistant</span>
         </div>
-      </div>
-
-      <!-- CHAT MODE -->
-      <div id="view-chat" class="pill-3-view hidden">
-        <div id="chat-container" class="chat-container">
-          <div id="chat-messages" class="chat-messages">
-            <!-- Messages will be added here dynamically -->
-          </div>
-          <div id="chat-composer" class="chat-composer">
-            <textarea
-              id="chat-manual-input"
-              class="chat-manual-input"
-              rows="1"
-              placeholder="Type a message..."
-              aria-label="Manual context input"
-            ></textarea>
-            <button id="chat-manual-send" class="chat-manual-send" type="button">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
+        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 mr-4 px-3 py-1 rounded-full bg-surface-container/50 border border-white/5">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant opacity-70">Opacity</label>
+                <input id="quick-window-opacity" class="w-20 h-1 bg-outline-variant rounded-full appearance-none cursor-pointer accent-primary no-drag" max="10" min="1" step="1" type="range" value="10">
+            </div>
+            <button id="pill-3-clear-btn" class="overlay-btn flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium no-drag">
+                Clear <span class="kbd-chip scale-90 origin-right bg-surface-container-high rounded-full">⌘ ⇧ ⌫</span>
             </button>
-          </div>
         </div>
-      </div>
+    </div>
 
-      <!-- SETTINGS MODE -->
-      <div id="view-settings" class="pill-3-view hidden">
-        <div id="settings-panel" class="settings-panel">
-          <div class="settings-body">
-            <div class="settings-group">
-              <label class="settings-label">AI Provider</label>
-              <select id="setting-ai-provider" class="settings-input">
-                <option value="gemini">Gemini</option>
-                <option value="ollama">Ollama (Local)</option>
-              </select>
-            </div>
-            <div id="gemini-settings-group">
-              <div class="settings-group">
-                <label class="settings-label">Gemini API Key(s)</label>
-                <div class="settings-input-row">
-                  <input type="password" id="setting-gemini-key" class="settings-input" placeholder="Enter Gemini API key(s)..." />
-                  <button type="button" id="toggle-gemini-key-visibility" class="settings-input-toggle">Show</button>
+    <!-- ANSWER VIEW -->
+    <div id="view-answer" class="flex-1 flex flex-col hidden">
+        <div class="px-6 py-5 border-b border-white/5 bg-[#1A1A1A]">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex gap-3">
+                    <span class="material-symbols-outlined text-tertiary-container mt-1">forum</span>
+                    <h2 id="answer-question-text" class="font-headline-md text-headline-md text-on-surface">
+                        <!-- Question text -->
+                    </h2>
                 </div>
-                <span class="settings-helper-text">Multiple Gemini keys are supported as comma-separated values.</span>
-              </div>
-              <div class="settings-group">
-                <label class="settings-label">Gemini Model</label>
-                <select id="setting-gemini-model" class="settings-input"></select>
-              </div>
             </div>
-            <div id="ollama-settings-group" class="hidden">
-              <div class="settings-group">
-                <label class="settings-label">Ollama Server URL</label>
-                <input type="text" id="setting-ollama-base-url" class="settings-input" placeholder="http://localhost:11434" />
-                <span class="settings-helper-text">URL of your running Ollama instance.</span>
-              </div>
-              <div class="settings-group">
-                <label class="settings-label">Ollama Model</label>
-                <div class="settings-input-row">
-                  <input type="text" id="setting-ollama-model" class="settings-input" placeholder="llama3.2" />
-                  <button type="button" id="fetch-ollama-models" class="settings-input-toggle">Fetch</button>
-                </div>
-                <select id="setting-ollama-model-select" class="settings-input hidden"></select>
-                <span class="settings-helper-text">Enter a model name or click Fetch to list installed models.</span>
-              </div>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label">Programming Language</label>
-              <select id="setting-programming-language" class="settings-input"></select>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label">AssemblyAI API Key</label>
-              <div class="settings-input-row">
-                <input type="password" id="setting-assembly-key" class="settings-input" placeholder="Enter AssemblyAI API key..." />
-                <button type="button" id="toggle-assembly-key-visibility" class="settings-input-toggle">Show</button>
-              </div>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label">AssemblyAI Speech Model</label>
-              <select id="setting-assembly-model" class="settings-input"></select>
-            </div>
-            <div class="settings-group">
-              <div class="settings-label-row">
-                <label class="settings-label">Window Opacity</label>
-                <span id="setting-window-opacity-value" class="settings-value-chip">10/10</span>
-              </div>
-              <input type="range" id="setting-window-opacity" class="settings-range" min="1" max="10" step="1" value="10" />
-            </div>
-            <div class="settings-group">
-              <label class="settings-label">Keyboard Shortcuts</label>
-              <div id="settings-shortcuts-list" class="settings-shortcuts-list"></div>
-              <span class="settings-helper-text">Shortcuts are read-only here. Edit <code>src/config.js</code> to customize.</span>
-            </div>
-            <button type="button" id="open-context-profile-btn" class="save-settings-btn" style="background: rgba(99,102,241,0.7); border-color: rgba(99,102,241,0.9); margin-top: 2px;">Edit Context Profile</button>
-            <button id="save-settings-btn" class="save-settings-btn">Save Settings</button>
-          </div>
         </div>
-      </div>
-      <!-- CONTEXT PROFILE MODE -->
-      <div id="view-context-profile" class="pill-3-view hidden">
-        <div id="context-profile-panel" class="settings-panel">
-          <div class="settings-header">
-            <span class="settings-title">Context Profile</span>
-            <button id="close-context-profile" class="close-btn" type="button" aria-label="Close context profile">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.42 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9 4.89-4.89a1 1 0 0 0 0-1.42Z"/>
-              </svg>
+        <!-- Generating Response State -->
+        <div id="answer-generating-state" class="px-6 py-6 bg-[#1A1A1A] flex-1 hidden">
+            <div class="flex flex-col gap-6 py-2">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-primary/60 animate-pulse" style="animation-delay: 150ms"></span>
+                        <span class="w-2 h-2 rounded-full bg-primary/30 animate-pulse" style="animation-delay: 300ms"></span>
+                    </div>
+                    <span class="text-sm font-medium text-primary">Generating answer...</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="h-3.5 bg-surface-container-highest/60 rounded w-5/6 animate-pulse"></div>
+                    <div class="h-3.5 bg-surface-container-highest/40 rounded w-3/4 animate-pulse"></div>
+                    <div class="h-3.5 bg-surface-container-highest/20 rounded w-1/2 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Answer Content Area -->
+        <div class="px-6 py-6 bg-[#1A1A1A] flex-1 overflow-y-auto" id="answer-content-area">
+            <!-- Answer content -->
+        </div>
+    </div>
+
+    <!-- CHAT VIEW -->
+    <div id="view-chat" class="flex-1 flex flex-col hidden">
+        <div id="chat-container" class="flex-1 flex flex-col h-full">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#1A1A1A]">
+                <!-- Messages will be added here dynamically -->
+            </div>
+            <div id="chat-composer" class="p-4 border-t border-white/5 bg-[#121414] flex gap-2 items-end shrink-0">
+                <textarea
+                    id="chat-manual-input"
+                    class="flex-1 bg-surface-container-low border border-white/10 rounded-lg p-3 text-sm text-on-surface focus:outline-none focus:border-primary resize-none no-drag"
+                    rows="1"
+                    placeholder="Type a message..."
+                ></textarea>
+                <button id="chat-manual-send" class="overlay-btn flex items-center justify-center p-3 rounded-lg bg-surface-container hover:bg-surface-variant text-primary no-drag" type="button">
+                    <span class="material-symbols-outlined text-[20px]">send</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div id="view-settings" class="flex-1 flex flex-col hidden">
+        <div id="settings-panel" class="flex-1 overflow-y-auto p-6 bg-[#1A1A1A]">
+            <div class="settings-body flex flex-col gap-4">
+                <div class="settings-group">
+                    <label class="text-sm font-medium text-on-surface-variant">AI Provider</label>
+                    <select id="setting-ai-provider" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface">
+                        <option value="gemini">Gemini</option>
+                        <option value="ollama">Ollama (Local)</option>
+                    </select>
+                </div>
+                <div id="gemini-settings-group" class="flex flex-col gap-4">
+                    <div class="settings-group">
+                        <label class="text-sm font-medium text-on-surface-variant">Gemini API Key(s)</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="password" id="setting-gemini-key" class="flex-1 bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm no-drag text-on-surface" placeholder="Enter Gemini API key(s)..." />
+                            <button type="button" id="toggle-gemini-key-visibility" class="overlay-btn px-3 py-2 rounded text-sm no-drag">Show</button>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="text-sm font-medium text-on-surface-variant">Gemini Model</label>
+                        <select id="setting-gemini-model" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface"></select>
+                    </div>
+                </div>
+                <div id="ollama-settings-group" class="hidden flex flex-col gap-4">
+                    <div class="settings-group">
+                        <label class="text-sm font-medium text-on-surface-variant">Ollama Server URL</label>
+                        <input type="text" id="setting-ollama-base-url" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface" placeholder="http://localhost:11434" />
+                    </div>
+                    <div class="settings-group">
+                        <label class="text-sm font-medium text-on-surface-variant">Ollama Model</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="setting-ollama-model" class="flex-1 bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm no-drag text-on-surface" placeholder="llama3.2" />
+                            <button type="button" id="fetch-ollama-models" class="overlay-btn px-3 py-2 rounded text-sm no-drag">Fetch</button>
+                        </div>
+                        <select id="setting-ollama-model-select" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 hidden no-drag text-on-surface"></select>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <label class="text-sm font-medium text-on-surface-variant">Programming Language</label>
+                    <select id="setting-programming-language" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface"></select>
+                </div>
+                <div class="settings-group">
+                    <label class="text-sm font-medium text-on-surface-variant">AssemblyAI API Key</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="password" id="setting-assembly-key" class="flex-1 bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm no-drag text-on-surface" placeholder="Enter AssemblyAI API key..." />
+                        <button type="button" id="toggle-assembly-key-visibility" class="overlay-btn px-3 py-2 rounded text-sm no-drag">Show</button>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <label class="text-sm font-medium text-on-surface-variant">AssemblyAI Speech Model</label>
+                    <select id="setting-assembly-model" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface"></select>
+                </div>
+                <div class="settings-group">
+                    <div class="flex justify-between">
+                        <label class="text-sm font-medium text-on-surface-variant">Window Opacity</label>
+                        <span id="setting-window-opacity-value" class="text-xs bg-surface-container px-2 py-1 rounded">10/10</span>
+                    </div>
+                    <input type="range" id="setting-window-opacity" class="w-full mt-2 no-drag accent-primary" min="1" max="10" step="1" value="10" />
+                </div>
+                <div class="settings-group">
+                    <label class="text-sm font-medium text-on-surface-variant">Keyboard Shortcuts</label>
+                    <div id="settings-shortcuts-list" class="text-xs text-on-surface-variant mt-1"></div>
+                </div>
+                <button type="button" id="open-context-profile-btn" class="overlay-btn mt-2 py-2 rounded no-drag">Edit Context Profile</button>
+                <button id="save-settings-btn" class="overlay-btn primary py-2 rounded bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 no-drag">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTEXT PROFILE MODE -->
+    <div id="view-context-profile" class="flex-1 flex flex-col hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#1A1A1A]">
+            <span class="font-headline-md text-on-surface">Context Profile</span>
+            <button id="close-context-profile" class="overlay-btn p-2 rounded-full no-drag">
+                <span class="material-symbols-outlined">close</span>
             </button>
-          </div>
-          <div class="settings-body">
-            <div class="settings-group">
-              <label class="settings-label" for="cp-upload-pdf-btn">Resume PDF</label>
-              <div class="settings-input-row">
-                <button id="cp-upload-pdf-btn" type="button" class="action-btn" style="flex: 1; justify-content: center;">Upload PDF</button>
-              </div>
-              <div id="cp-resume-status" class="settings-helper-text">No PDF uploaded.</div>
-              <input type="hidden" id="cp-resume-text" value="" />
-            </div>
-            <div class="settings-group">
-              <label class="settings-label" for="cp-strengths">Strengths</label>
-              <textarea id="cp-strengths" class="settings-input" rows="3"></textarea>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label" for="cp-weaknesses">Weaknesses</label>
-              <textarea id="cp-weaknesses" class="settings-input" rows="3"></textarea>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label" for="cp-past-experiences">Past Experiences</label>
-              <textarea id="cp-past-experiences" class="settings-input" rows="3"></textarea>
-            </div>
-            <div class="settings-group">
-              <label class="settings-label" for="cp-additional-context">Additional Context</label>
-              <textarea id="cp-additional-context" class="settings-input" rows="3"></textarea>
-            </div>
-            <button id="save-context-profile-btn" type="button" class="save-settings-btn">Save Profile</button>
-          </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- Hidden status text for feedback -->
-    <div id="status-text" class="status-text" style="display: none;">AI Assistant</div>
-    
-    <!-- Close Confirmation (remains hidden until triggered) -->
-    <div id="close-confirmation-dialog" class="close-confirmation hidden" role="dialog" aria-modal="true" aria-labelledby="close-confirmation-title">
-      <div class="close-confirmation-card">
-        <div id="close-confirmation-title" class="close-confirmation-title">Close App?</div>
-        <div class="close-confirmation-text">This will stop voice capture and close the assistant.</div>
-        <div class="close-confirmation-actions">
-          <button id="cancel-close-btn" class="close-confirmation-btn close-confirmation-btn-secondary">Cancel</button>
-          <button id="confirm-close-btn" class="close-confirmation-btn close-confirmation-btn-danger">Close App</button>
+        <div class="flex-1 overflow-y-auto p-6 bg-[#1A1A1A] flex flex-col gap-4">
+            <div class="settings-group">
+                <label class="text-sm font-medium text-on-surface-variant">Resume PDF</label>
+                <div class="mt-1">
+                    <button id="cp-upload-pdf-btn" type="button" class="overlay-btn px-4 py-2 rounded text-sm w-full no-drag">Upload PDF</button>
+                </div>
+                <div id="cp-resume-status" class="text-xs text-on-surface-variant mt-1">No PDF uploaded.</div>
+                <input type="hidden" id="cp-resume-text" value="" />
+            </div>
+            <div class="settings-group">
+                <label class="text-sm font-medium text-on-surface-variant">Strengths</label>
+                <textarea id="cp-strengths" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+                <label class="text-sm font-medium text-on-surface-variant">Weaknesses</label>
+                <textarea id="cp-weaknesses" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+                <label class="text-sm font-medium text-on-surface-variant">Past Experiences</label>
+                <textarea id="cp-past-experiences" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface" rows="3"></textarea>
+            </div>
+            <div class="settings-group">
+                <label class="text-sm font-medium text-on-surface-variant">Additional Context</label>
+                <textarea id="cp-additional-context" class="w-full bg-surface-container-low border border-white/10 rounded px-3 py-2 text-sm mt-1 no-drag text-on-surface" rows="3"></textarea>
+            </div>
+            <button id="save-context-profile-btn" type="button" class="overlay-btn primary py-2 rounded bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 mt-4 no-drag">Save Profile</button>
         </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <script type="module" src="renderer.js"></script>
+<!-- Close Confirmation (remains hidden until triggered) -->
+<div id="close-confirmation-dialog" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog">
+    <div class="bg-surface-container rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-2xl">
+        <div id="close-confirmation-title" class="text-lg font-semibold mb-2">Close App?</div>
+        <div class="text-sm text-on-surface-variant mb-6">This will stop voice capture and close the assistant.</div>
+        <div class="flex justify-end gap-3">
+            <button id="cancel-close-btn" class="overlay-btn px-4 py-2 rounded-lg text-sm no-drag">Cancel</button>
+            <button id="confirm-close-btn" class="overlay-btn danger px-4 py-2 rounded-lg text-sm bg-error/20 text-error no-drag">Close App</button>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Hidden status text for feedback if any modules still need it -->
+<div id="status-text" class="hidden">AI Assistant</div>
+<!-- Add hidden loading-overlay for legacy logic if needed -->
+<div id="loading-overlay" class="hidden"></div>
+
+<script type="module" src="renderer.js"></script>
 </body>
 </html>
