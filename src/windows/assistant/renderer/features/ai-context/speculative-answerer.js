@@ -1,293 +1,421 @@
 /**
- * Speculative Question Pre-Answerer
+ * Speculative question pre-answerer.
  *
- * Strategy: detect questions in real-time from the host partial transcript,
- * start an AI request immediately (while the host is still speaking), buffer
- * the streaming chunks, and commit (show) the answer the moment the host
- * finishes. Because the AI has been generating for several seconds already,
- * the answer is available near-instantly.
- *
- * Speed optimizations:
- *  1. Only 100ms debounce before pre-fetch starts (was 400ms)
- *  2. Partial ending with "?" triggers immediate commit (no waiting for final event)
- *  3. Silence timer: if no new partial arrives for 900ms after question detected, auto-commit
- *
- * State machine: idle -> debouncing -> prefetching -> (commit) -> idle
+ * A speech recognizer emits a growing version of the current utterance. A
+ * later partial often contains the first question again (for example:
+ * "What is X? How does Y work?"). Treating the whole partial as a new
+ * question creates duplicate or empty answer bubbles, so this module keeps
+ * one question group and only starts work for genuinely new clauses.
  */
-
-// ---- Question Detection -----------------------------------------------------
 
 const QUESTION_START = /^(what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b/i;
 const QUESTION_PHRASES = /\b(can you|could you|would you|tell me|walk me through|explain|describe|what is|what are|what was|what were|how do|how does|how would|how did|why is|why are|why did|is there|are there|do you|does it|did you)\b/i;
-const MIN_WORD_COUNT = 4;
+const QUESTION_START_AFTER_CONJUNCTION = /\s+(?:and|also|plus)\s+(?=(?:what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b)/ig;
+const MIN_WORD_COUNT = 3;
+
+function normalizeText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function questionKey(text) {
+  return normalizeText(text)
+    .toLowerCase()
+    .replace(/[?!.:,;]+$/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function looksLikeQuestion(text) {
-  const t = String(text || '').trim();
-  if (!t) return false;
-  const words = t.split(/\s+/).filter(Boolean);
+  const candidate = normalizeText(text);
+  if (!candidate) return false;
+  const words = candidate.split(/\s+/).filter(Boolean);
   if (words.length < MIN_WORD_COUNT) return false;
-  return t.endsWith('?') || QUESTION_START.test(t) || QUESTION_PHRASES.test(t);
+  return candidate.endsWith('?') || QUESTION_START.test(candidate) || QUESTION_PHRASES.test(candidate);
 }
 
-/** True when the partial text strongly signals the question is done (ends with ?) */
-function isQuestionComplete(text) {
-  return String(text || '').trim().endsWith('?');
+function splitConjoinedQuestions(text) {
+  const candidate = normalizeText(text);
+  if (!candidate) return [];
+
+  const parts = [];
+  let start = 0;
+  candidate.replace(QUESTION_START_AFTER_CONJUNCTION, (_match, offset) => {
+    parts.push(candidate.slice(start, offset).trim());
+    start = offset;
+    return _match;
+  });
+  parts.push(candidate.slice(start).trim());
+  return parts.filter(Boolean);
 }
 
-// ---- Factory ----------------------------------------------------------------
+/**
+ * Returns clauses in transcript order. A question mark is the strongest
+ * boundary; conjunctions before a new question word cover STT output that
+ * omitted punctuation ("what is X and how does Y work").
+ */
+function extractQuestionCandidates(text) {
+  const input = normalizeText(text);
+  if (!input) return [];
+
+  const clauses = [];
+  let start = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    if (input[index] !== '?') continue;
+    clauses.push(input.slice(start, index + 1).trim());
+    start = index + 1;
+  }
+  if (start < input.length) clauses.push(input.slice(start).trim());
+
+  return clauses
+    .flatMap(splitConjoinedQuestions)
+    .map((clause) => normalizeText(clause))
+    .filter(looksLikeQuestion);
+}
+
+function isCompleteQuestion(text) {
+  return normalizeText(text).endsWith('?');
+}
 
 export function createSpeculativeAnswerer({
   getContext,
   onPrefetchStart,
   onPrefetchCancel,
   onCommit,
+  onGroupComplete,
   onError,
-  debounceMs = 100,      // Start pre-fetch 100ms after question detected in partial
-  silenceMs = 900        // Auto-commit if no new partial for 900ms (host paused)
+  debounceMs = 100,
+  silenceMs = 900,
+  groupSettleMs = 1800
 }) {
-  let state = 'idle'; // 'idle' | 'debouncing' | 'prefetching'
+  let state = 'idle';
   let debounceTimer = null;
   let silenceTimer = null;
+  let groupSettleTimer = null;
   let currentRequestId = 0;
-  let bufferedText = '';
-  let prefetchComplete = false;
+  let groupId = 0;
+  let activeRequest = null;
   let removeChunkListener = null;
   let removeEndListener = null;
-  let lastQuestionText = '';
-  let lastPartialText = '';
+  let questionGroup = [];
 
-  // ---- Internal helpers -----------------------------------------------------
-
-  function _detachListeners() {
-    if (removeChunkListener) { removeChunkListener(); removeChunkListener = null; }
-    if (removeEndListener) { removeEndListener(); removeEndListener = null; }
+  function clearTimer(timerName) {
+    if (timerName === 'debounce' && debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    if (timerName === 'silence' && silenceTimer) {
+      clearTimeout(silenceTimer);
+      silenceTimer = null;
+    }
+    if (timerName === 'settle' && groupSettleTimer) {
+      clearTimeout(groupSettleTimer);
+      groupSettleTimer = null;
+    }
   }
 
-  function _clearDebounce() {
-    if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
+  function detachActiveListeners() {
+    if (removeChunkListener) {
+      removeChunkListener();
+      removeChunkListener = null;
+    }
+    if (removeEndListener) {
+      removeEndListener();
+      removeEndListener = null;
+    }
   }
 
-  function _clearSilence() {
-    if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+  function ensureQuestionGroup() {
+    if (questionGroup.length === 0) groupId += 1;
+    return groupId;
   }
 
-  function _attachListeners(requestId) {
+  function findQuestion(text) {
+    const key = questionKey(text);
+    return questionGroup.find((entry) => (
+      entry.key === key
+      || key.startsWith(`${entry.key} `)
+      || entry.key.startsWith(`${key} `)
+    ));
+  }
+
+  function sameQuestionText(first, second) {
+    const firstKey = questionKey(first);
+    const secondKey = questionKey(second);
+    return firstKey === secondKey
+      || firstKey.startsWith(`${secondKey} `)
+      || secondKey.startsWith(`${firstKey} `);
+  }
+
+  function rememberQuestion(text) {
+    const normalized = normalizeText(text);
+    const existing = findQuestion(normalized);
+    if (existing) {
+      // Keep the most complete wording as partial STT text grows.
+      if (normalized.length > existing.text.length) {
+        existing.text = normalized;
+        existing.key = questionKey(normalized);
+      }
+      return existing;
+    }
+
+    ensureQuestionGroup();
+    const entry = {
+      text: normalized,
+      key: questionKey(normalized),
+      started: false,
+      committed: false
+    };
+    questionGroup.push(entry);
+    return entry;
+  }
+
+  function scheduleGroupCompletion() {
+    clearTimer('settle');
+    if (questionGroup.length === 0) return;
+
+    const completedQuestions = questionGroup
+      .filter((entry) => entry.committed)
+      .map((entry) => entry.text);
+    if (completedQuestions.length === 0) return;
+
+    const settledGroupId = groupId;
+    groupSettleTimer = setTimeout(() => {
+      groupSettleTimer = null;
+      if (settledGroupId !== groupId) return;
+      onGroupComplete?.(completedQuestions, settledGroupId);
+      questionGroup = [];
+    }, groupSettleMs);
+  }
+
+  function notifyRequestError(request, error) {
+    if (request.cancelled) return;
+    console.error('[speculative-answerer] Request error:', error?.message);
+    onError?.(error);
+  }
+
+  function invokeRequest(request) {
+    const context = getContext?.({
+      groupId,
+      questionText: request.questionText
+    }) || {};
+    window.electronAPI.speculativeAnswer({
+      questionText: request.questionText,
+      contextString: context.contextString || '',
+      relatedQuestionContext: context.relatedQuestionContext || '',
+      requestId: request.id
+    }).catch((error) => notifyRequestError(request, error));
+  }
+
+  function attachRequestListeners(request) {
     removeChunkListener = window.electronAPI.onAiStreamChunk((data) => {
-      if (data.actionId !== 'speculative' || data.requestId !== requestId) return;
-      bufferedText += data.text;
+      if (data.actionId !== 'speculative' || data.requestId !== request.id) return;
+      request.bufferedText += String(data.text || '');
     });
 
     if (window.electronAPI.onAiStreamEnd) {
       removeEndListener = window.electronAPI.onAiStreamEnd((data) => {
-        if (data.actionId !== 'speculative' || data.requestId !== requestId) return;
-        prefetchComplete = true;
+        if (data.actionId !== 'speculative' || data.requestId !== request.id) return;
+        request.isComplete = true;
       });
     }
   }
 
-  // ---- Pre-fetch ------------------------------------------------------------
+  function startPrefetch(questionText) {
+    const normalized = normalizeText(questionText);
+    if (!looksLikeQuestion(normalized)) return;
 
-  async function _startPrefetch(questionText) {
-    _detachListeners();
+    if (activeRequest && sameQuestionText(activeRequest.questionText, normalized)) {
+      activeRequest.questionText = normalized;
+      return;
+    }
 
+    detachActiveListeners();
     currentRequestId += 1;
-    const myRequestId = currentRequestId;
-    bufferedText = '';
-    prefetchComplete = false;
-    lastQuestionText = questionText;
+    const request = {
+      id: currentRequestId,
+      questionText: normalized,
+      bufferedText: '',
+      isComplete: false,
+      cancelled: false
+    };
+    activeRequest = request;
     state = 'prefetching';
-
+    rememberQuestion(normalized).started = true;
     onPrefetchStart?.();
-    _attachListeners(myRequestId);
-
-    const context = getContext?.() || {};
-
-    try {
-      await window.electronAPI.speculativeAnswer({
-        questionText,
-        contextString: context.contextString || '',
-        requestId: myRequestId
-      });
-    } catch (err) {
-      if (myRequestId === currentRequestId && state === 'prefetching') {
-        console.error('[speculative-answerer] Pre-fetch error:', err?.message);
-        onError?.(err);
-        cancel();
-      }
-    }
+    attachRequestListeners(request);
+    invokeRequest(request);
   }
 
-  // ---- Commit ---------------------------------------------------------------
+  function commitActive(questionText, { immediate = false } = {}) {
+    const request = activeRequest;
+    if (!request) return false;
 
-  function _commit(questionText) {
-    if (state !== 'prefetching' && state !== 'debouncing') return;
+    const entry = rememberQuestion(questionText || request.questionText);
+    entry.text = normalizeText(questionText || request.questionText);
+    entry.key = questionKey(entry.text);
+    entry.started = true;
+    entry.committed = true;
 
-    const myRequestId = currentRequestId;
-    const myBufferedText = bufferedText;
-    const isComplete = prefetchComplete;
-
-    _detachListeners();
-    _clearDebounce();
-    _clearSilence();
+    detachActiveListeners();
+    clearTimer('debounce');
+    clearTimer('silence');
+    activeRequest = null;
     state = 'idle';
-    bufferedText = '';
-    prefetchComplete = false;
-    lastQuestionText = '';
-    lastPartialText = '';
+
+    const bufferedText = request.bufferedText;
+    const isComplete = request.isComplete;
+    const requestId = request.id;
+    const committedQuestion = entry.text;
+    const questionIndex = questionGroup.indexOf(entry);
 
     function listenForMore(onChunk, onDone) {
-      if (isComplete) { onDone?.(); return () => {}; }
+      if (isComplete) {
+        onDone?.();
+        return () => {};
+      }
 
       const removeChunk = window.electronAPI.onAiStreamChunk((data) => {
-        if (data.actionId !== 'speculative' || data.requestId !== myRequestId) return;
-        onChunk?.(data.text);
+        if (data.actionId !== 'speculative' || data.requestId !== requestId) return;
+        onChunk?.(String(data.text || ''));
       });
 
       let removeDone = () => {};
       if (window.electronAPI.onAiStreamEnd) {
         removeDone = window.electronAPI.onAiStreamEnd((data) => {
-          if (data.actionId !== 'speculative' || data.requestId !== myRequestId) return;
+          if (data.actionId !== 'speculative' || data.requestId !== requestId) return;
           removeChunk();
           removeDone();
           onDone?.();
         });
       }
 
-      return () => { removeChunk(); removeDone(); };
+      return () => {
+        removeChunk();
+        removeDone();
+      };
     }
 
-    onCommit(myBufferedText, isComplete, listenForMore, questionText || lastQuestionText);
-  }
-
-  // ---- Fallback: no pre-fetch running when final/silence triggered -----------
-
-  function _triggerFreshAndCommit(questionText) {
-    currentRequestId += 1;
-    const myRequestId = currentRequestId;
-    bufferedText = '';
-    prefetchComplete = false;
-    lastQuestionText = questionText;
-    state = 'prefetching';
-
-    onPrefetchStart?.();
-    _attachListeners(myRequestId);
-
-    const context = getContext?.() || {};
-    window.electronAPI.speculativeAnswer({
-      questionText,
-      contextString: context.contextString || '',
-      requestId: myRequestId
-    }).catch((err) => {
-      if (myRequestId === currentRequestId) {
-        console.error('[speculative-answerer] Fresh call error:', err?.message);
-        onError?.(err);
-      }
+    onCommit?.(bufferedText, isComplete, listenForMore, committedQuestion, {
+      append: questionIndex > 0,
+      questionIndex,
+      groupId,
+      immediate
     });
-
-    // Commit immediately with empty buffer — all chunks stream in live
-    _commit(questionText);
+    scheduleGroupCompletion();
+    return true;
   }
 
-  // ---- Silence timer --------------------------------------------------------
+  function triggerFreshAndCommit(questionText) {
+    startPrefetch(questionText);
+    // Use a visible placeholder while the fresh request streams. This avoids
+    // ever creating a blank message when no prefetched token is available.
+    commitActive(questionText, { immediate: true });
+  }
 
-  function _armSilenceTimer(questionText) {
-    _clearSilence();
+  function processTranscript(text, { final = false } = {}) {
+    const candidates = extractQuestionCandidates(text);
+    if (candidates.length === 0) return false;
+
+    const completeCandidates = candidates.filter((candidate) => (
+      isCompleteQuestion(candidate) || final
+    ));
+    if (completeCandidates.length > 0) clearTimer('debounce');
+
+    for (const candidate of completeCandidates) {
+      const entry = rememberQuestion(candidate);
+      if (entry.committed) continue;
+
+      if (activeRequest) {
+        const activeEntry = findQuestion(activeRequest.questionText);
+        if (activeEntry === entry || questionKey(activeRequest.questionText) === entry.key) {
+          commitActive(candidate);
+          continue;
+        }
+        // A complete clause superseded an older unfinished clause. Commit the
+        // older request before starting the new one so no stream is orphaned.
+        commitActive(activeRequest.questionText);
+      }
+
+      triggerFreshAndCommit(candidate);
+    }
+
+    if (!final) {
+      const trailing = candidates[candidates.length - 1];
+      const prefetchTarget = completeCandidates.length === 0 ? candidates[0] : trailing;
+      if (prefetchTarget && !isCompleteQuestion(prefetchTarget)) {
+        const entry = rememberQuestion(prefetchTarget);
+        if (!entry.committed) {
+          if (activeRequest) {
+            const activeEntry = findQuestion(activeRequest.questionText);
+            if (activeEntry !== entry) commitActive(activeRequest.questionText);
+          }
+          if (!activeRequest) {
+            clearTimer('debounce');
+            debounceTimer = setTimeout(() => {
+              debounceTimer = null;
+              if (!entry.started && !entry.committed && !activeRequest) {
+                startPrefetch(entry.text);
+              }
+            }, debounceMs);
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  function armSilenceTimer() {
+    clearTimer('silence');
     silenceTimer = setTimeout(() => {
       silenceTimer = null;
-      console.log('[speculative-answerer] Silence timeout — committing');
-      if (state === 'prefetching') {
-        _commit(questionText);
-      } else if (state === 'debouncing') {
-        _clearDebounce();
-        _triggerFreshAndCommit(questionText);
-      }
+      if (activeRequest) commitActive(activeRequest.questionText);
     }, silenceMs);
   }
 
-  // ---- Public API -----------------------------------------------------------
-
   function feedPartial(source, text) {
     if (source !== 'system') return;
-    const trimmed = String(text || '').trim();
+    const normalized = normalizeText(text);
+    if (!looksLikeQuestion(normalized) && extractQuestionCandidates(normalized).length === 0) return;
 
-    if (!looksLikeQuestion(trimmed)) {
-      if (state === 'debouncing') {
-        _clearDebounce();
-        _clearSilence();
-        state = 'idle';
-        onPrefetchCancel?.();
-      }
-      return;
-    }
-
-    lastPartialText = trimmed;
-
-    // If the partial already ends with "?" the question is complete — act fast
-    if (isQuestionComplete(trimmed)) {
-      _clearDebounce();
-      _clearSilence();
-      if (state === 'prefetching') {
-        // Pre-fetch already running — commit now
-        _commit(trimmed);
-      } else {
-        // Start fresh and commit immediately
-        _triggerFreshAndCommit(trimmed);
-      }
-      return;
-    }
-
-    // Question shape detected but not yet ended — start/reset pre-fetch debounce
-    _clearDebounce();
-    if (state !== 'prefetching') state = 'debouncing';
-
-    debounceTimer = setTimeout(() => {
-      debounceTimer = null;
-      _startPrefetch(trimmed);
-    }, debounceMs);
-
-    // Arm the silence timer so we commit even if no final event arrives
-    _armSilenceTimer(trimmed);
+    clearTimer('settle');
+    processTranscript(normalized);
+    if (activeRequest) armSilenceTimer();
+    else scheduleGroupCompletion();
   }
 
   function feedFinal(source, text) {
     if (source !== 'system') return;
-    const trimmed = String(text || '').trim();
+    const normalized = normalizeText(text);
+    if (!normalized) return;
 
-    if (!looksLikeQuestion(trimmed)) {
-      if (state === 'debouncing') {
-        _clearDebounce();
-        _clearSilence();
-        state = 'idle';
-        onPrefetchCancel?.();
-      }
+    const hadQuestions = processTranscript(normalized, { final: true });
+    if (!hadQuestions) {
+      if (activeRequest) commitActive(activeRequest.questionText);
       return;
     }
 
-    // Final transcript confirmed as a question — commit
-    _clearSilence();
-    if (state === 'prefetching') {
-      _commit(trimmed);
-    } else if (state === 'debouncing') {
-      _clearDebounce();
-      _triggerFreshAndCommit(trimmed);
-    } else {
-      _triggerFreshAndCommit(trimmed);
-    }
+    clearTimer('silence');
+    if (activeRequest) commitActive(activeRequest.questionText);
+    scheduleGroupCompletion();
   }
 
   function cancel() {
-    _clearDebounce();
-    _clearSilence();
-    _detachListeners();
-    if (state === 'debouncing' || state === 'prefetching') onPrefetchCancel?.();
+    clearTimer('debounce');
+    clearTimer('silence');
+    clearTimer('settle');
+    detachActiveListeners();
+    if (activeRequest) activeRequest.cancelled = true;
+    if (state !== 'idle') onPrefetchCancel?.();
+    activeRequest = null;
     state = 'idle';
-    bufferedText = '';
-    prefetchComplete = false;
-    lastQuestionText = '';
-    lastPartialText = '';
+    questionGroup = [];
   }
 
-  function destroy() { cancel(); }
+  function destroy() {
+    cancel();
+  }
 
   return { feedPartial, feedFinal, cancel, destroy };
 }

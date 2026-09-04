@@ -19,7 +19,8 @@ const {
   buildMeetingNotesPrompt,
   buildScreenshotAnalysisPrompt,
   buildSuggestResponsePrompt,
-  buildSpeculativeAnswerPrompt
+  buildSpeculativeAnswerPrompt,
+  buildSpeculativeSummaryPrompt
 } = require('./prompts');
 
 class GeminiService {
@@ -191,10 +192,22 @@ class GeminiService {
         throw new Error('Daily token limit reached');
       }
 
+      const requestData = request.generationConfig
+        ? {
+            contents: [{
+              role: 'user',
+              parts: Array.isArray(request.data)
+                ? request.data
+                : [{ text: String(request.data || '') }]
+            }],
+            generationConfig: request.generationConfig
+          }
+        : request.data;
+
       // Streaming path: use generateContentStream when onChunk callback is provided
       if (typeof request.onChunk === 'function') {
         console.log(`[Gemini API] Streaming ${request.type} request started`);
-        const streamResult = await this.model.generateContentStream(request.data);
+        const streamResult = await this.model.generateContentStream(requestData);
         let fullText = '';
         let chunkIndex = 0;
 
@@ -219,9 +232,9 @@ class GeminiService {
       console.log(`[Gemini API] Non-streaming ${request.type} request started`);
       let result;
       if (request.type === 'text') {
-        result = await this.model.generateContent(request.data);
+        result = await this.model.generateContent(requestData);
       } else if (request.type === 'multimodal') {
-        result = await this.model.generateContent(request.data);
+        result = await this.model.generateContent(requestData);
       } else {
         throw new Error(`Unsupported Gemini request type: ${request.type}`);
       }
@@ -279,15 +292,16 @@ class GeminiService {
 
   async generateText(prompt, options = {}) {
     const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
+    const generationConfig = options.generationConfig;
 
     // Streaming requests bypass the queue and fire immediately for real-time output
     if (onChunk) {
-      const request = { type: 'text', data: prompt, resolve: null, reject: null, onChunk };
+      const request = { type: 'text', data: prompt, generationConfig, resolve: null, reject: null, onChunk };
       return this._executeRequest(request);
     }
 
     return new Promise((resolve, reject) => {
-      const request = { type: 'text', data: prompt, resolve, reject, onChunk: null };
+      const request = { type: 'text', data: prompt, generationConfig, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
@@ -295,15 +309,16 @@ class GeminiService {
 
   async generateMultimodal(parts, options = {}) {
     const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
+    const generationConfig = options.generationConfig;
 
     // Streaming requests bypass the queue and fire immediately for real-time output
     if (onChunk) {
-      const request = { type: 'multimodal', data: parts, resolve: null, reject: null, onChunk };
+      const request = { type: 'multimodal', data: parts, generationConfig, resolve: null, reject: null, onChunk };
       return this._executeRequest(request);
     }
 
     return new Promise((resolve, reject) => {
-      const request = { type: 'multimodal', data: parts, resolve, reject, onChunk: null };
+      const request = { type: 'multimodal', data: parts, generationConfig, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
@@ -457,15 +472,30 @@ class GeminiService {
     const contextString = typeof options.contextString === 'string'
       ? options.contextString
       : '';
+    const relatedQuestionContext = typeof options.relatedQuestionContext === 'string'
+      ? options.relatedQuestionContext
+      : '';
     const prompt = buildSpeculativeAnswerPrompt({
       questionText,
       contextString,
+      relatedQuestionContext,
       programmingLanguage: this.programmingLanguage,
       contextProfile: options.contextProfile
     });
 
-    const streamOptions = { onChunk: options.onChunk };
+    const streamOptions = {
+      onChunk: options.onChunk,
+      generationConfig: { maxOutputTokens: 260, temperature: 0.4 }
+    };
     return this.generateText(prompt, streamOptions);
+  }
+
+  async speculativeSummary(questions, answers, options = {}) {
+    const prompt = buildSpeculativeSummaryPrompt({ questions, answers });
+    return this.generateText(prompt, {
+      onChunk: options.onChunk,
+      generationConfig: { maxOutputTokens: 180, temperature: 0.3 }
+    });
   }
 }
 

@@ -426,43 +426,63 @@ Example code format when needed:
 function buildSpeculativeAnswerPrompt({
   questionText = '',
   contextString = '',
+  relatedQuestionContext = '',
   programmingLanguage,
   contextProfile
 } = {}) {
   const resolvedLanguage = resolveProgrammingLanguage(programmingLanguage);
-  const codeFenceLanguage = getCodeFenceLanguage(resolvedLanguage);
   const profileText = buildContextProfileText(contextProfile);
 
-  return `You are a real-time interview coach. Your job is to write exactly what the candidate should SAY OUT LOUD in response to the interviewer's question.
+  return `You are a real-time interview coach. Write exactly what the candidate should SAY OUT LOUD in response to the interviewer's question.
 
 CRITICAL RULES:
 - Write in FIRST PERSON as the candidate speaking to the interviewer ("I am...", "I have...", "My approach would be...")
 - Write natural spoken language — conversational, confident, not robotic or overly formal
 - Do NOT write as an AI assistant. Do NOT address the candidate. Write the candidate's actual spoken words.
 - The question may have minor speech recognition errors — infer the correct meaning.
-- Be concise but complete. Match depth to the question complexity.
+- Answer ONLY what the question asks. Do not add unrelated background, caveats, or follow-up questions.
+- If earlier related questions and answers are provided below, treat this as a continuation of the same thought. Carry forward their subject, terminology, assumptions, and useful details so the answer connects naturally instead of starting over.
+- When continuing, focus on what is new in the current question. Do not repeat the earlier answer unless a brief reference is needed for clarity.
+- Return exactly 3–6 concise bullet points. Each bullet must be a complete first-person sentence or thought.
+- Keep the answer to about 100–180 words (roughly 45–90 seconds spoken); never write a long essay.
+- Start with the direct answer, then add only the most useful supporting detail.
+- If context is missing for a behavioral question, use a plausible, positive, adaptable example that makes the candidate look capable. Do not invent specific employers, credentials, metrics, or facts that are not provided.
 ${profileText ? `\n${profileText}` : ''}
 ${buildProgrammingLanguagePreference(resolvedLanguage)}
 
 For greeting / small talk questions (e.g. "how are you doing?"):
-Write 2–3 natural spoken sentences the candidate says back — warm, confident, brief.
+Write 2–3 brief bullets with warm, natural spoken wording.
 
 For behavioral / background questions (e.g. "tell me about yourself", "what's your experience with X?"):
-Write a structured spoken answer drawing on the candidate's background above.
+Write a short, confident story using the candidate's background above. If it is insufficient, make a favorable but general assumption the candidate can adapt.
 
 For technical / coding questions:
-**What I'd say:**
-[Natural spoken explanation of the approach — 2–4 sentences]
+- Explain the approach, key tradeoff, and complexity only when relevant.
+- Include code only when the interviewer explicitly asks for code; keep it minimal and place it in one bullet.
 
-**Code (${resolvedLanguage}):**
-\`\`\`${codeFenceLanguage}
-[Complete, runnable, commented code]
-\`\`\`
-**Complexity:** Time: O(?) | Space: O(?)
+${buildContextBlock('Recent conversation', contextString)}${buildContextBlock('Earlier related questions and answers in this response', relatedQuestionContext)}Interviewer just asked: ${questionText}
 
-${buildContextBlock('Recent conversation', contextString)}Interviewer just asked: ${questionText}
+  Write only the candidate's concise bullet-point response (first person, spoken language):`.trim();
+}
 
-Write what the candidate says in response (first person, spoken language):`.trim();
+// Produces the final compact response for an utterance that contained more
+// than one question. The individual answers are already shown above it; this
+// paragraph gives the user one quick answer covering the complete utterance.
+function buildSpeculativeSummaryPrompt({ questions = '', answers = '' } = {}) {
+  return `You are a real-time interview coach.
+
+The interviewer asked the following question or questions:
+${questions}
+
+The detailed answers generated for them were:
+${answers}
+
+Write one small, self-contained paragraph of 2–4 sentences that answers every
+question above as one connected line of thought. Use the answer to an earlier
+question to frame later answers when they are related, and avoid repeating
+shared setup. Keep it concise and natural to say out loud. Do not use
+headings, bullets, numbering, or mention that you are summarizing. Do not omit
+any question. If the questions are technical, preserve the key technical terms.`.trim();
 }
 
 module.exports = {
@@ -473,5 +493,6 @@ module.exports = {
   buildAskAiSessionPrompt,
   buildScreenshotAnalysisPrompt,
   buildSuggestResponsePrompt,
-  buildSpeculativeAnswerPrompt
+  buildSpeculativeAnswerPrompt,
+  buildSpeculativeSummaryPrompt
 };

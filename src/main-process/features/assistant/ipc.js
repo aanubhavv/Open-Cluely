@@ -515,6 +515,9 @@ function registerAssistantIpc({
   ipcMain.handle('speculative-answer', async (_event, payload = {}) => {
     const questionText = typeof payload?.questionText === 'string' ? payload.questionText.trim() : '';
     const contextString = typeof payload?.contextString === 'string' ? payload.contextString.trim() : '';
+    const relatedQuestionContext = typeof payload?.relatedQuestionContext === 'string'
+      ? payload.relatedQuestionContext.trim()
+      : '';
     const requestId = payload?.requestId ?? 0;
 
     if (!questionText) {
@@ -540,6 +543,7 @@ function registerAssistantIpc({
         }
         return geminiService.speculativeAnswer(questionText, {
           contextString,
+          relatedQuestionContext,
           contextProfile: getAppState()?.contextProfile,
           onChunk
         });
@@ -551,6 +555,32 @@ function registerAssistantIpc({
       console.error('[speculative-answer] Error:', error.message);
       sendToRenderer('ai-stream-end', { actionId: 'speculative', requestId });
       return { success: false, error: mapGeminiErrorMessage(error, 'Speculative answer failed') };
+    }
+  });
+
+  ipcMain.handle('speculative-summary', async (_event, payload = {}) => {
+    const questions = typeof payload?.questions === 'string' ? payload.questions.trim() : '';
+    const answers = typeof payload?.answers === 'string' ? payload.answers.trim() : '';
+
+    if (!questions || !answers) {
+      return { success: false, error: 'Questions and answers are required' };
+    }
+
+    if (!geminiRuntime.hasApiKeys()) {
+      return { success: false, error: 'No API key configured' };
+    }
+
+    try {
+      const text = await geminiRuntime.executeWithKeyFailover((geminiService) => {
+        if (!geminiService || !geminiService.model) {
+          throw new Error('AI model not initialized.');
+        }
+        return geminiService.speculativeSummary(questions, answers);
+      });
+      return { success: true, text };
+    } catch (error) {
+      console.error('[speculative-summary] Error:', error.message);
+      return { success: false, error: mapGeminiErrorMessage(error, 'Speculative summary failed') };
     }
   });
 }

@@ -206,6 +206,12 @@ function createInvokeActions(ipcRenderer) {
       channel: 'speculative-answer',
       label: 'speculativeAnswer',
       fallback: (error) => ({ success: false, error: error.message })
+    }),
+
+    speculativeSummary: invokeWithFallback(ipcRenderer, {
+      channel: 'speculative-summary',
+      label: 'speculativeSummary',
+      fallback: (error) => ({ success: false, error: error.message })
     })
   };
 }

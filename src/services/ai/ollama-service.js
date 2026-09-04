@@ -16,11 +16,24 @@ const {
   buildInsightsPrompt,
   buildMeetingNotesPrompt,
   buildScreenshotAnalysisPrompt,
-  buildSuggestResponsePrompt
+  buildSuggestResponsePrompt,
+  buildSpeculativeAnswerPrompt,
+  buildSpeculativeSummaryPrompt
 } = require('./prompts');
 
 const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434';
 const DEFAULT_OLLAMA_MODEL = 'llama3.2';
+
+function getOllamaGenerationOptions(generationConfig) {
+  if (!generationConfig) return null;
+
+  return {
+    ...(generationConfig.maxOutputTokens ? { num_predict: generationConfig.maxOutputTokens } : {}),
+    ...(typeof generationConfig.temperature === 'number'
+      ? { temperature: generationConfig.temperature }
+      : {})
+  };
+}
 
 class OllamaService {
   constructor(options = {}) {
@@ -132,7 +145,7 @@ class OllamaService {
         return await this._streamChat(prompt, request);
       }
 
-      return await this._chat(prompt);
+      return await this._chat(prompt, request);
     } catch (error) {
       console.error(`Ollama request error (attempt ${retryCount + 1}):`, error.message);
 
@@ -173,9 +186,10 @@ class OllamaService {
     ];
   }
 
-  async _chat(prompt) {
+  async _chat(prompt, request = {}) {
     const url = `${this.baseUrl}/api/chat`;
     const messages = this._buildMessages(prompt);
+    const generationOptions = getOllamaGenerationOptions(request.generationConfig);
 
     console.log(`[Ollama API] Non-streaming request started (model: ${this.modelName})`);
 
@@ -185,7 +199,8 @@ class OllamaService {
       body: JSON.stringify({
         model: this.modelName,
         messages,
-        stream: false
+        stream: false,
+        ...(generationOptions ? { options: generationOptions } : {})
       })
     });
 
@@ -204,6 +219,7 @@ class OllamaService {
   async _streamChat(prompt, request) {
     const url = `${this.baseUrl}/api/chat`;
     const messages = this._buildMessages(prompt);
+    const generationOptions = getOllamaGenerationOptions(request.generationConfig);
 
     console.log(`[Ollama API] Streaming request started (model: ${this.modelName})`);
 
@@ -213,7 +229,8 @@ class OllamaService {
       body: JSON.stringify({
         model: this.modelName,
         messages,
-        stream: true
+        stream: true,
+        ...(generationOptions ? { options: generationOptions } : {})
       })
     });
 
@@ -297,15 +314,16 @@ class OllamaService {
 
   async generateText(prompt, options = {}) {
     const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
+    const generationConfig = options.generationConfig;
 
     // Streaming requests bypass the queue and fire immediately for real-time output
     if (onChunk) {
-      const request = { type: 'text', data: prompt, resolve: null, reject: null, onChunk };
+      const request = { type: 'text', data: prompt, generationConfig, resolve: null, reject: null, onChunk };
       return this._executeRequest(request);
     }
 
     return new Promise((resolve, reject) => {
-      const request = { type: 'text', data: prompt, resolve, reject, onChunk: null };
+      const request = { type: 'text', data: prompt, generationConfig, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
@@ -465,9 +483,29 @@ class OllamaService {
     const contextString = typeof options.contextString === 'string'
       ? options.contextString
       : '';
-    const prompt = buildInsightsPrompt({ contextString: `Question: ${questionText}\n\nContext: ${contextString}` });
-    const streamOptions = { onChunk: options.onChunk };
+    const relatedQuestionContext = typeof options.relatedQuestionContext === 'string'
+      ? options.relatedQuestionContext
+      : '';
+    const prompt = buildSpeculativeAnswerPrompt({
+      questionText,
+      contextString,
+      relatedQuestionContext,
+      programmingLanguage: this.programmingLanguage,
+      contextProfile: options.contextProfile
+    });
+    const streamOptions = {
+      onChunk: options.onChunk,
+      generationConfig: { maxOutputTokens: 260, temperature: 0.4 }
+    };
     return this.generateText(prompt, streamOptions);
+  }
+
+  async speculativeSummary(questions, answers, options = {}) {
+    const prompt = buildSpeculativeSummaryPrompt({ questions, answers });
+    return this.generateText(prompt, {
+      onChunk: options.onChunk,
+      generationConfig: { maxOutputTokens: 180, temperature: 0.3 }
+    });
   }
 }
 

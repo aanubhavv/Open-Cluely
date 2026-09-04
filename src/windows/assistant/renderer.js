@@ -168,6 +168,7 @@ const aiActionInFlightState = {
 };
 // Speculative pre-answerer — wired up in init() after UI is ready
 let speculativeAnswerer = null;
+let activeAutoAnswer = null;
 const shortcutManager = createShortcutManager({ settingsShortcutsList });
 const windowAdjustmentManager = createWindowAdjustmentManager({
     windowResizeHandles,
@@ -529,43 +530,136 @@ function createStreamHandler(actionId) {
     return { start, finalize, cleanup };
 }
 
-/**
- * Called by the speculative answerer when a question is committed.
- * Displays the buffered answer immediately and streams any remaining chunks.
- */
-function commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText) {
-    if (!hasGeminiApiKeysConfigured) return;
+function renderAutoAnswerMessage() {
+    if (!activeAutoAnswer?.messageRecord) return;
 
-    // Don't stack on top of a running Ask AI action
-    if (isAiActionInFlight('askAi') || isAiActionInFlight('screenAi')) return;
+    const sections = activeAutoAnswer.sections.map((section, index) => {
+        const answer = section.answer.trim()
+            || (section.complete ? 'No answer was generated.' : 'Generating answer…');
+        return `**Question ${index + 1}:** ${section.question}\n\n**Answer:**\n\n${answer}`;
+    });
 
-    const heading = '🤖 **Auto-answer:**\n\n';
-    const initialContent = bufferedText ? (heading + bufferedText) : (heading + '...');
+    let content = '🤖 **Auto-answer:**\n\n' + sections.join('\n\n---\n\n');
+    if (activeAutoAnswer.summary) {
+        content += `\n\n**Summary:**\n\n${activeAutoAnswer.summary}`;
+    }
+    chatUiManager.updateChatMessageContent(activeAutoAnswer.messageRecord.id, content);
+}
 
-    const messageRecord = addChatMessage('ai-response', initialContent);
-    if (!messageRecord) return;
+function buildSpeculativeRelatedQuestionContext(groupId) {
+    if (!activeAutoAnswer || activeAutoAnswer.groupId !== groupId) return '';
 
-    addMonitorLog('info', 'speculative-commit', `Question committed: "${questionText?.slice(0, 60)}"`);
-    showFeedback('Answer ready', 'success');
+    return activeAutoAnswer.sections
+        .map((section, index) => {
+            const question = String(section.question || '').trim();
+            const answer = String(section.answer || '').trim();
+            if (!question) return '';
+            return `Earlier related question ${index + 1}: ${question}\nEarlier answer (possibly still streaming): ${answer || '[not available yet]'}`;
+        })
+        .filter(Boolean)
+        .join('\n\n');
+}
 
-    if (isComplete) {
-        // Nothing left to stream — we're done
+function maybeGenerateAutoAnswerSummary() {
+    const autoAnswer = activeAutoAnswer;
+    if (!autoAnswer || !autoAnswer.groupComplete || autoAnswer.summaryRequested) return;
+    if (autoAnswer.sections.some((section) => !section.complete)) return;
+
+    autoAnswer.summaryRequested = true;
+    const questions = autoAnswer.sections.map((section) => section.question).join('\n');
+    const answers = autoAnswer.sections
+        .map((section, index) => `Question ${index + 1}: ${section.question}\nAnswer: ${section.answer}`)
+        .join('\n\n');
+
+    const summaryRequest = window.electronAPI.speculativeSummary?.({ questions, answers });
+    if (!summaryRequest || typeof summaryRequest.then !== 'function') {
+        autoAnswer.summary = autoAnswer.sections.map((section) => section.answer.trim()).filter(Boolean).join(' ');
+        renderAutoAnswerMessage();
         return;
     }
 
-    // Stream remaining chunks directly into the message bubble
-    let accumulated = bufferedText;
+    summaryRequest.then((result) => {
+            if (activeAutoAnswer !== autoAnswer) return;
+            autoAnswer.summary = result?.success && result.text?.trim()
+                ? result.text.trim()
+                : autoAnswer.sections.map((section) => section.answer.trim()).filter(Boolean).join(' ');
+            renderAutoAnswerMessage();
+        })
+        .catch((error) => {
+            console.error('[speculative] Summary error:', error);
+            if (activeAutoAnswer !== autoAnswer) return;
+            autoAnswer.summary = autoAnswer.sections.map((section) => section.answer.trim()).filter(Boolean).join(' ');
+            renderAutoAnswerMessage();
+        });
+}
+
+/**
+ * Called when one question is committed. Additional questions in the same
+ * utterance reuse the existing message record and append another Q&A section.
+ */
+function commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText, metadata = {}) {
+    if (!hasGeminiApiKeysConfigured) return;
+
+    // Don't stack on top of a running Ask AI action.
+    if (isAiActionInFlight('askAi') || isAiActionInFlight('screenAi')) return;
+
+    const isNewGroup = !metadata.append
+        || !activeAutoAnswer
+        || activeAutoAnswer.groupId !== metadata.groupId;
+    if (isNewGroup) {
+        const messageRecord = addChatMessage('ai-response', '🤖 **Auto-answer:**\n\nGenerating answer…');
+        if (!messageRecord) return;
+        activeAutoAnswer = {
+            groupId: metadata.groupId,
+            messageRecord,
+            sections: [],
+            groupComplete: false,
+            summaryRequested: false,
+            summary: ''
+        };
+    }
+
+    const autoAnswer = activeAutoAnswer;
+    const section = {
+        question: String(questionText || '').trim() || 'Question not captured',
+        answer: String(bufferedText || ''),
+        complete: Boolean(isComplete)
+    };
+    autoAnswer.sections.push(section);
+    renderAutoAnswerMessage();
+
+    addMonitorLog('info', 'speculative-commit', `Question committed: "${section.question.slice(0, 60)}"`);
+    showFeedback('Answer ready', 'success');
+
+    if (isComplete) {
+        maybeGenerateAutoAnswerSummary();
+        return;
+    }
+
     const cleanup = listenForMore(
         (chunkText) => {
-            accumulated += chunkText;
-            chatUiManager.updateChatMessageContent(messageRecord.id, heading + accumulated);
+            section.answer += chunkText;
+            renderAutoAnswerMessage();
         },
         () => {
-            // Stream finished — finalize with the complete text
-            chatUiManager.updateChatMessageContent(messageRecord.id, heading + accumulated);
+            section.complete = true;
+            renderAutoAnswerMessage();
             cleanup?.();
+            maybeGenerateAutoAnswerSummary();
         }
     );
+}
+
+function completeAutoAnswerGroup(questions, groupId) {
+    if (!activeAutoAnswer || activeAutoAnswer.groupId !== groupId) return;
+    activeAutoAnswer.groupComplete = true;
+    questions.forEach((question, index) => {
+        if (activeAutoAnswer.sections[index] && question.length > activeAutoAnswer.sections[index].question.length) {
+            activeAutoAnswer.sections[index].question = question;
+        }
+    });
+    renderAutoAnswerMessage();
+    maybeGenerateAutoAnswerSummary();
 }
 
 /**
@@ -575,7 +669,10 @@ function initSpeculativeAnswerer() {
     if (!window.electronAPI?.speculativeAnswer) return;
 
     speculativeAnswerer = createSpeculativeAnswerer({
-        getContext: () => buildFilteredAiContextBundle({ charBudget: AI_CONTEXT_CHAR_BUDGET, emitTruncationLog: false }),
+        getContext: ({ groupId } = {}) => ({
+            ...buildFilteredAiContextBundle({ charBudget: AI_CONTEXT_CHAR_BUDGET, emitTruncationLog: false }),
+            relatedQuestionContext: buildSpeculativeRelatedQuestionContext(groupId)
+        }),
         onPrefetchStart: () => {
             showFeedback('🤔 Preparing answer...', 'info');
             addMonitorLog('info', 'speculative-start', 'Question detected — pre-fetch started', 'system');
@@ -584,8 +681,11 @@ function initSpeculativeAnswerer() {
             // Status bar auto-clears; nothing else to clean up
             addMonitorLog('info', 'speculative-cancel', 'Pre-fetch cancelled', 'system');
         },
-        onCommit: (bufferedText, isComplete, listenForMore, questionText) => {
-            commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText);
+        onCommit: (bufferedText, isComplete, listenForMore, questionText, metadata) => {
+            commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText, metadata);
+        },
+        onGroupComplete: (questions, groupId) => {
+            completeAutoAnswerGroup(questions, groupId);
         },
         onError: (err) => {
             console.error('[speculative] Error:', err?.message);
@@ -892,6 +992,7 @@ async function clearStealthData() {
         }
         screenshotsCount = 0;
         messageStore.clear();
+        activeAutoAnswer = null;
         chatMessagesArray = messageStore.getMessages();
         chatMessagesElement.innerHTML = '';
         updateUI();
