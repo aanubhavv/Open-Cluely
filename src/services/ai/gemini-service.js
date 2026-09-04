@@ -18,7 +18,8 @@ const {
   buildInsightsPrompt,
   buildMeetingNotesPrompt,
   buildScreenshotAnalysisPrompt,
-  buildSuggestResponsePrompt
+  buildSuggestResponsePrompt,
+  buildSpeculativeAnswerPrompt
 } = require('./prompts');
 
 class GeminiService {
@@ -30,7 +31,7 @@ class GeminiService {
 
     this.requestQueue = [];
     this.lastRequestTime = 0;
-    this.minRequestInterval = 6000;
+    this.minRequestInterval = 0; // No preemptive delay — 429 retries handle actual rate limits
     this.maxRetries = 3;
     this.isProcessing = false;
 
@@ -277,30 +278,32 @@ class GeminiService {
   }
 
   async generateText(prompt, options = {}) {
-    return new Promise((resolve, reject) => {
-      const request = {
-        type: 'text',
-        data: prompt,
-        resolve,
-        reject,
-        onChunk: typeof options.onChunk === 'function' ? options.onChunk : null
-      };
+    const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
 
+    // Streaming requests bypass the queue and fire immediately for real-time output
+    if (onChunk) {
+      const request = { type: 'text', data: prompt, resolve: null, reject: null, onChunk };
+      return this._executeRequest(request);
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = { type: 'text', data: prompt, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
   }
 
   async generateMultimodal(parts, options = {}) {
-    return new Promise((resolve, reject) => {
-      const request = {
-        type: 'multimodal',
-        data: parts,
-        resolve,
-        reject,
-        onChunk: typeof options.onChunk === 'function' ? options.onChunk : null
-      };
+    const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
 
+    // Streaming requests bypass the queue and fire immediately for real-time output
+    if (onChunk) {
+      const request = { type: 'multimodal', data: parts, resolve: null, reject: null, onChunk };
+      return this._executeRequest(request);
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = { type: 'multimodal', data: parts, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
@@ -442,6 +445,25 @@ class GeminiService {
       return 'Not enough conversation data for insights.';
     }
     const prompt = buildInsightsPrompt({ contextString });
+    const streamOptions = { onChunk: options.onChunk };
+    return this.generateText(prompt, streamOptions);
+  }
+
+  /**
+   * Speculatively answers a question detected from the host's speech,
+   * starting while the host is still talking to minimize perceived latency.
+   */
+  async speculativeAnswer(questionText, options = {}) {
+    const contextString = typeof options.contextString === 'string'
+      ? options.contextString
+      : '';
+    const prompt = buildSpeculativeAnswerPrompt({
+      questionText,
+      contextString,
+      programmingLanguage: this.programmingLanguage,
+      contextProfile: options.contextProfile
+    });
+
     const streamOptions = { onChunk: options.onChunk };
     return this.generateText(prompt, streamOptions);
   }

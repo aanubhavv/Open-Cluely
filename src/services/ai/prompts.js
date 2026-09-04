@@ -419,6 +419,52 @@ Example code format when needed:
 `.trim();
 }
 
+// ─── SPECULATIVE ANSWER ───────────────────────────────────────────────────────
+// Fires while the host is still speaking to pre-compute what the USER should say.
+// Uses a lean prompt to minimize time-to-first-token.
+// CRITICAL: The output is what the USER says to the INTERVIEWER — first person, spoken.
+function buildSpeculativeAnswerPrompt({
+  questionText = '',
+  contextString = '',
+  programmingLanguage,
+  contextProfile
+} = {}) {
+  const resolvedLanguage = resolveProgrammingLanguage(programmingLanguage);
+  const codeFenceLanguage = getCodeFenceLanguage(resolvedLanguage);
+  const profileText = buildContextProfileText(contextProfile);
+
+  return `You are a real-time interview coach. Your job is to write exactly what the candidate should SAY OUT LOUD in response to the interviewer's question.
+
+CRITICAL RULES:
+- Write in FIRST PERSON as the candidate speaking to the interviewer ("I am...", "I have...", "My approach would be...")
+- Write natural spoken language — conversational, confident, not robotic or overly formal
+- Do NOT write as an AI assistant. Do NOT address the candidate. Write the candidate's actual spoken words.
+- The question may have minor speech recognition errors — infer the correct meaning.
+- Be concise but complete. Match depth to the question complexity.
+${profileText ? `\n${profileText}` : ''}
+${buildProgrammingLanguagePreference(resolvedLanguage)}
+
+For greeting / small talk questions (e.g. "how are you doing?"):
+Write 2–3 natural spoken sentences the candidate says back — warm, confident, brief.
+
+For behavioral / background questions (e.g. "tell me about yourself", "what's your experience with X?"):
+Write a structured spoken answer drawing on the candidate's background above.
+
+For technical / coding questions:
+**What I'd say:**
+[Natural spoken explanation of the approach — 2–4 sentences]
+
+**Code (${resolvedLanguage}):**
+\`\`\`${codeFenceLanguage}
+[Complete, runnable, commented code]
+\`\`\`
+**Complexity:** Time: O(?) | Space: O(?)
+
+${buildContextBlock('Recent conversation', contextString)}Interviewer just asked: ${questionText}
+
+Write what the candidate says in response (first person, spoken language):`.trim();
+}
+
 module.exports = {
   buildAnswerQuestionPrompt,
   buildFollowUpEmailPrompt,
@@ -426,5 +472,6 @@ module.exports = {
   buildMeetingNotesPrompt,
   buildAskAiSessionPrompt,
   buildScreenshotAnalysisPrompt,
-  buildSuggestResponsePrompt
+  buildSuggestResponsePrompt,
+  buildSpeculativeAnswerPrompt
 };

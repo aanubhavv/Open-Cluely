@@ -296,32 +296,32 @@ class OllamaService {
   }
 
   async generateText(prompt, options = {}) {
-    return new Promise((resolve, reject) => {
-      const request = {
-        type: 'text',
-        data: prompt,
-        resolve,
-        reject,
-        onChunk: typeof options.onChunk === 'function' ? options.onChunk : null
-      };
+    const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
 
+    // Streaming requests bypass the queue and fire immediately for real-time output
+    if (onChunk) {
+      const request = { type: 'text', data: prompt, resolve: null, reject: null, onChunk };
+      return this._executeRequest(request);
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = { type: 'text', data: prompt, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
   }
 
   async generateMultimodal(parts, options = {}) {
-    // Ollama doesn't support inline image data the same way Gemini does.
-    // We extract text parts and pass them as a text-only prompt.
-    return new Promise((resolve, reject) => {
-      const request = {
-        type: 'multimodal',
-        data: parts,
-        resolve,
-        reject,
-        onChunk: typeof options.onChunk === 'function' ? options.onChunk : null
-      };
+    const onChunk = typeof options.onChunk === 'function' ? options.onChunk : null;
 
+    // Streaming requests bypass the queue and fire immediately for real-time output
+    if (onChunk) {
+      const request = { type: 'multimodal', data: parts, resolve: null, reject: null, onChunk };
+      return this._executeRequest(request);
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = { type: 'multimodal', data: parts, resolve, reject, onChunk: null };
       this.requestQueue.push(request);
       this.processQueue();
     });
@@ -457,6 +457,15 @@ class OllamaService {
       return 'Not enough conversation data for insights.';
     }
     const prompt = buildInsightsPrompt({ contextString });
+    const streamOptions = { onChunk: options.onChunk };
+    return this.generateText(prompt, streamOptions);
+  }
+
+  async speculativeAnswer(questionText, options = {}) {
+    const contextString = typeof options.contextString === 'string'
+      ? options.contextString
+      : '';
+    const prompt = buildInsightsPrompt({ contextString: `Question: ${questionText}\n\nContext: ${contextString}` });
     const streamOptions = { onChunk: options.onChunk };
     return this.generateText(prompt, streamOptions);
   }

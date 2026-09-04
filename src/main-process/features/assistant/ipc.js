@@ -511,6 +511,48 @@ function registerAssistantIpc({
       return { success: false, error: error.message };
     }
   });
+
+  ipcMain.handle('speculative-answer', async (_event, payload = {}) => {
+    const questionText = typeof payload?.questionText === 'string' ? payload.questionText.trim() : '';
+    const contextString = typeof payload?.contextString === 'string' ? payload.contextString.trim() : '';
+    const requestId = payload?.requestId ?? 0;
+
+    if (!questionText) {
+      sendToRenderer('ai-stream-end', { actionId: 'speculative', requestId });
+      return { success: false, error: 'No question text provided' };
+    }
+
+    if (!geminiRuntime.hasApiKeys()) {
+      sendToRenderer('ai-stream-end', { actionId: 'speculative', requestId });
+      return { success: false, error: 'No API key configured' };
+    }
+
+    try {
+      const onChunk = ({ text, index }) => {
+        sendToRenderer('ai-stream-chunk', { actionId: 'speculative', requestId, text, index });
+      };
+
+      sendToRenderer('ai-stream-start', { actionId: 'speculative', requestId });
+
+      const text = await geminiRuntime.executeWithKeyFailover((geminiService) => {
+        if (!geminiService || !geminiService.model) {
+          throw new Error('AI model not initialized.');
+        }
+        return geminiService.speculativeAnswer(questionText, {
+          contextString,
+          contextProfile: getAppState()?.contextProfile,
+          onChunk
+        });
+      });
+
+      sendToRenderer('ai-stream-end', { actionId: 'speculative', requestId });
+      return { success: true, text };
+    } catch (error) {
+      console.error('[speculative-answer] Error:', error.message);
+      sendToRenderer('ai-stream-end', { actionId: 'speculative', requestId });
+      return { success: false, error: mapGeminiErrorMessage(error, 'Speculative answer failed') };
+    }
+  });
 }
 
 module.exports = {

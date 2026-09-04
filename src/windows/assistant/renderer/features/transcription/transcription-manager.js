@@ -17,7 +17,9 @@ export function createTranscriptionManager({
     monitorLiveMic,
     monitorLogList,
     addChatMessage,
-    showFeedback
+    showFeedback,
+    onPartialTranscript,  // optional: (source, text) => void
+    onFinalTranscript     // optional: (source, text) => void
 }) {
     let micAudioContext = null;
     let micMediaStream = null;
@@ -494,6 +496,11 @@ export function createTranscriptionManager({
         if (shouldAutoScroll) {
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
+
+        // Notify speculative answerer so it can detect questions in real-time
+        if (typeof onPartialTranscript === 'function') {
+            onPartialTranscript(source, trimmed);
+        }
     }
 
     function handleVoskFinal(data) {
@@ -522,6 +529,11 @@ export function createTranscriptionManager({
             systemPartialText = '';
         }
         queueFinalTranscript(source, finalText);
+
+        // Notify speculative answerer — this is the "question complete" signal
+        if (typeof onFinalTranscript === 'function') {
+            onFinalTranscript(source, finalText);
+        }
     }
 
     function handleVoskStatus(data) {

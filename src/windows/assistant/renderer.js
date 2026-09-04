@@ -11,6 +11,7 @@ import { createShortcutManager } from './renderer/features/settings/shortcut-man
 import { createSettingsPanelManager } from './renderer/features/settings/settings-panel-manager.js';
 import { createContextProfileManager } from './renderer/features/settings/context-profile-manager.js';
 import { createTranscriptionManager } from './renderer/features/transcription/transcription-manager.js';
+import { createSpeculativeAnswerer } from './renderer/features/ai-context/speculative-answerer.js';
 
 import {
     createTranscriptionSourceState,
@@ -165,6 +166,8 @@ const aiActionInFlightState = {
     notes: false,
     insights: false
 };
+// Speculative pre-answerer — wired up in init() after UI is ready
+let speculativeAnswerer = null;
 const shortcutManager = createShortcutManager({ settingsShortcutsList });
 const windowAdjustmentManager = createWindowAdjustmentManager({
     windowResizeHandles,
@@ -247,7 +250,13 @@ const transcriptionManager = createTranscriptionManager({
     monitorLiveMic,
     monitorLogList,
     addChatMessage: (type, content, options) => addChatMessage(type, content, options),
-    showFeedback: (message, type) => showFeedback(message, type)
+    showFeedback: (message, type) => showFeedback(message, type),
+    onPartialTranscript: (source, text) => {
+        speculativeAnswerer?.feedPartial(source, text);
+    },
+    onFinalTranscript: (source, text) => {
+        speculativeAnswerer?.feedFinal(source, text);
+    }
 });
 
 // Initialize
@@ -264,6 +273,7 @@ async function init() {
     const settings = await loadShortcutConfig();
     setupEventListeners();
     setupIpcListeners();
+    initSpeculativeAnswerer();
     setupWindowAdjustments();
     applyTheme(resolveInitialThemePreference(settings), { persist: false });
     if (settings?.windowOpacityLevel) {
@@ -488,15 +498,15 @@ function createStreamHandler(actionId) {
         accumulatedText = headingPrefix || '';
         messageRecord = addChatMessage('ai-response', accumulatedText || '...');
 
+        // Hide loading overlay immediately so the message bubble is visible from the start
+        hideLoadingOverlay();
+        loadingHidden = true;
+
         removeChunkListener = window.electronAPI.onAiStreamChunk((data) => {
             if (data.actionId !== actionId) return;
             accumulatedText += data.text;
             if (messageRecord) {
                 chatUiManager.updateChatMessageContent(messageRecord.id, accumulatedText);
-            }
-            if (!loadingHidden) {
-                loadingHidden = true;
-                hideLoadingOverlay();
             }
         });
 
@@ -517,6 +527,71 @@ function createStreamHandler(actionId) {
     }
 
     return { start, finalize, cleanup };
+}
+
+/**
+ * Called by the speculative answerer when a question is committed.
+ * Displays the buffered answer immediately and streams any remaining chunks.
+ */
+function commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText) {
+    if (!hasGeminiApiKeysConfigured) return;
+
+    // Don't stack on top of a running Ask AI action
+    if (isAiActionInFlight('askAi') || isAiActionInFlight('screenAi')) return;
+
+    const heading = '🤖 **Auto-answer:**\n\n';
+    const initialContent = bufferedText ? (heading + bufferedText) : (heading + '...');
+
+    const messageRecord = addChatMessage('ai-response', initialContent);
+    if (!messageRecord) return;
+
+    addMonitorLog('info', 'speculative-commit', `Question committed: "${questionText?.slice(0, 60)}"`);
+    showFeedback('Answer ready', 'success');
+
+    if (isComplete) {
+        // Nothing left to stream — we're done
+        return;
+    }
+
+    // Stream remaining chunks directly into the message bubble
+    let accumulated = bufferedText;
+    const cleanup = listenForMore(
+        (chunkText) => {
+            accumulated += chunkText;
+            chatUiManager.updateChatMessageContent(messageRecord.id, heading + accumulated);
+        },
+        () => {
+            // Stream finished — finalize with the complete text
+            chatUiManager.updateChatMessageContent(messageRecord.id, heading + accumulated);
+            cleanup?.();
+        }
+    );
+}
+
+/**
+ * Initialize the speculative answerer after UI is ready.
+ */
+function initSpeculativeAnswerer() {
+    if (!window.electronAPI?.speculativeAnswer) return;
+
+    speculativeAnswerer = createSpeculativeAnswerer({
+        getContext: () => buildFilteredAiContextBundle({ charBudget: AI_CONTEXT_CHAR_BUDGET, emitTruncationLog: false }),
+        onPrefetchStart: () => {
+            showFeedback('🤔 Preparing answer...', 'info');
+            addMonitorLog('info', 'speculative-start', 'Question detected — pre-fetch started', 'system');
+        },
+        onPrefetchCancel: () => {
+            // Status bar auto-clears; nothing else to clean up
+            addMonitorLog('info', 'speculative-cancel', 'Pre-fetch cancelled', 'system');
+        },
+        onCommit: (bufferedText, isComplete, listenForMore, questionText) => {
+            commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questionText);
+        },
+        onError: (err) => {
+            console.error('[speculative] Error:', err?.message);
+            addMonitorLog('error', 'speculative-error', err?.message || 'Unknown error', 'system');
+        }
+    });
 }
 
 function hasConfiguredGeminiApiKeys(value) {
@@ -739,6 +814,8 @@ async function askAiWithSessionContext() {
     }
 
     await runAiActionWithLock('askAi', async () => {
+        // Cancel any speculative pre-fetch — manual Ask AI takes precedence
+        speculativeAnswerer?.cancel();
         const stream = createStreamHandler('askAi');
         try {
             setAnalyzing(true);
@@ -808,6 +885,7 @@ async function analyzeScreenshotsOnly() {
 
 async function clearStealthData() {
     try {
+        speculativeAnswerer?.cancel();
         await window.electronAPI.clearStealth();
         if (window.electronAPI.clearConversationHistory) {
             await window.electronAPI.clearConversationHistory();

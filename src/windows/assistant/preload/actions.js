@@ -200,6 +200,12 @@ function createInvokeActions(ipcRenderer) {
       channel: 'select-and-parse-pdf',
       label: 'selectAndParsePdf',
       fallback: (error) => ({ success: false, error: error.message })
+    }),
+
+    speculativeAnswer: invokeWithFallback(ipcRenderer, {
+      channel: 'speculative-answer',
+      label: 'speculativeAnswer',
+      fallback: (error) => ({ success: false, error: error.message })
     })
   };
 }
