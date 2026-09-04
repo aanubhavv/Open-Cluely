@@ -443,26 +443,27 @@ CRITICAL RULES:
 - Answer ONLY what the question asks. Do not add unrelated background, caveats, or follow-up questions.
 - If earlier related questions and answers are provided below, treat this as a continuation of the same thought. Carry forward their subject, terminology, assumptions, and useful details so the answer connects naturally instead of starting over.
 - When continuing, focus on what is new in the current question. Do not repeat the earlier answer unless a brief reference is needed for clarity.
-- Return exactly 3–6 concise bullet points. Each bullet must be a complete first-person sentence or thought.
-- Keep the answer to about 100–180 words (roughly 45–90 seconds spoken); never write a long essay.
+- By default, return one short paragraph of 1–3 sentences with no heading, bullets, or numbering.
+- Keep it brief and speakable: aim for roughly 25–70 words, or less when a shorter answer is enough.
+- Use bullet points only when the question explicitly asks for multiple items, steps, or a comparison; then use no more than 3 short bullets.
 - Start with the direct answer, then add only the most useful supporting detail.
 - If context is missing for a behavioral question, use a plausible, positive, adaptable example that makes the candidate look capable. Do not invent specific employers, credentials, metrics, or facts that are not provided.
 ${profileText ? `\n${profileText}` : ''}
 ${buildProgrammingLanguagePreference(resolvedLanguage)}
 
 For greeting / small talk questions (e.g. "how are you doing?"):
-Write 2–3 brief bullets with warm, natural spoken wording.
+Write one warm, natural sentence.
 
 For behavioral / background questions (e.g. "tell me about yourself", "what's your experience with X?"):
 Write a short, confident story using the candidate's background above. If it is insufficient, make a favorable but general assumption the candidate can adapt.
 
 For technical / coding questions:
 - Explain the approach, key tradeoff, and complexity only when relevant.
-- Include code only when the interviewer explicitly asks for code; keep it minimal and place it in one bullet.
+- Include code only when the interviewer explicitly asks for it; keep it minimal and add only a brief explanation.
 
 ${buildContextBlock('Recent conversation', contextString)}${buildContextBlock('Earlier related questions and answers in this response', relatedQuestionContext)}Interviewer just asked: ${questionText}
 
-  Write only the candidate's concise bullet-point response (first person, spoken language):`.trim();
+  Write only the candidate's concise response (first person, spoken language):`.trim();
 }
 
 // Produces the final compact response for an utterance that contained more
@@ -477,7 +478,7 @@ ${questions}
 The detailed answers generated for them were:
 ${answers}
 
-Write one small, self-contained paragraph of 2–4 sentences that answers every
+Write one small, self-contained paragraph of 1–3 sentences that answers every
 question above as one connected line of thought. Use the answer to an earlier
 question to frame later answers when they are related, and avoid repeating
 shared setup. Keep it concise and natural to say out loud. Do not use

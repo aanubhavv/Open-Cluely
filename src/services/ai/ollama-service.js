@@ -495,7 +495,7 @@ class OllamaService {
     });
     const streamOptions = {
       onChunk: options.onChunk,
-      generationConfig: { maxOutputTokens: 260, temperature: 0.4 }
+      generationConfig: { maxOutputTokens: 140, temperature: 0.4 }
     };
     return this.generateText(prompt, streamOptions);
   }
