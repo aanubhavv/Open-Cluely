@@ -10,6 +10,12 @@
 
 const QUESTION_START = /^(what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b/i;
 const QUESTION_PHRASES = /\b(can you|could you|would you|tell me|walk me through|explain|describe|what is|what are|what was|what were|how do|how does|how would|how did|why is|why are|why did|is there|are there|do you|does it|did you)\b/i;
+// These phrases are safe to find inside a sentence. They let us discard an
+// acknowledgement or transition before the actual question (for example,
+// "Thanks for sharing... Moving on, can you describe...").
+const QUESTION_PHRASE_ANYWHERE = /\b(?:can you|could you|would you|should you|tell me|walk me through|what (?:is|are|was|were)|how (?:do|does|would|did)|why (?:is|are|did|do|does)|is there|are there|do you|does it|did you)\b/i;
+const QUESTION_START_ANYWHERE = /\b(?:what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b/ig;
+const QUESTION_LEAD_IN = /^(?:(?:moving on|now|also|plus|next|so|then|well|okay|alright|anyway|by the way|i wanted to ask|i would like to ask|i'd like to ask)[,;:\s-]*)+$/i;
 const QUESTION_START_AFTER_CONJUNCTION = /\s+(?:and|also|plus)\s+(?=(?:what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b)/ig;
 const MIN_WORD_COUNT = 3;
 
@@ -49,6 +55,53 @@ function splitConjoinedQuestions(text) {
   return parts.filter(Boolean);
 }
 
+function findQuestionStart(text) {
+  const candidate = normalizeText(text);
+  if (!candidate || QUESTION_START.test(candidate)) return 0;
+
+  // A generic word such as "what" is only accepted when it follows a
+  // sentence boundary or a known conversational lead-in, so phrases like
+  // "sharing what you built" are not mistaken for a new question.
+  let questionWordStart = -1;
+  QUESTION_START_ANYWHERE.lastIndex = 0;
+  let wordMatch;
+  while ((wordMatch = QUESTION_START_ANYWHERE.exec(candidate))) {
+    const prefix = candidate.slice(0, wordMatch.index);
+    const boundary = Math.max(
+      prefix.lastIndexOf('.'),
+      prefix.lastIndexOf('!'),
+      prefix.lastIndexOf('?')
+    );
+    const localPrefix = prefix.slice(boundary + 1).trim();
+
+    if (!localPrefix || QUESTION_LEAD_IN.test(localPrefix)) {
+      questionWordStart = wordMatch.index;
+      break;
+    }
+  }
+
+  // Prefer whichever valid marker occurs first. This matters for questions
+  // such as "what options did you weigh", where the later "did you" phrase
+  // is part of the question rather than its beginning.
+  const phraseMatch = candidate.match(QUESTION_PHRASE_ANYWHERE);
+  if (
+    phraseMatch
+    && typeof phraseMatch.index === 'number'
+    && (questionWordStart < 0 || phraseMatch.index < questionWordStart)
+  ) {
+    return phraseMatch.index;
+  }
+
+  return questionWordStart;
+}
+
+function extractQuestionText(text) {
+  const candidate = normalizeText(text);
+  const questionStart = findQuestionStart(candidate);
+  if (questionStart < 0) return candidate;
+  return normalizeText(candidate.slice(questionStart));
+}
+
 /**
  * Returns clauses in transcript order. A question mark is the strongest
  * boundary; conjunctions before a new question word cover STT output that
@@ -69,13 +122,15 @@ function extractQuestionCandidates(text) {
 
   return clauses
     .flatMap(splitConjoinedQuestions)
-    .map((clause) => normalizeText(clause))
+    .map((clause) => extractQuestionText(clause))
     .filter(looksLikeQuestion);
 }
 
 function isCompleteQuestion(text) {
   return normalizeText(text).endsWith('?');
 }
+
+export { extractQuestionCandidates };
 
 export function createSpeculativeAnswerer({
   getContext,
