@@ -440,28 +440,40 @@ CRITICAL RULES:
 - Write natural spoken language — conversational, confident, not robotic or overly formal
 - Do NOT write as an AI assistant. Do NOT address the candidate. Write the candidate's actual spoken words.
 - The question may have minor speech recognition errors — infer the correct meaning.
-- Answer ONLY what the question asks. Do not add unrelated background, caveats, or follow-up questions.
-- If earlier related questions and answers are provided below, treat this as a continuation of the same thought. Carry forward their subject, terminology, assumptions, and useful details so the answer connects naturally instead of starting over.
+- Answer ONLY the current question shown at the end of this prompt. Ignore any other question, greeting, or answer that appears in supporting context. Do not add unrelated background, caveats, or follow-up questions.
+- All questions in the related-question block are parts of ONE interview answer. Build and preserve one canonical story, project, or experience across the whole block.
+- If earlier related questions and answers are provided below, treat this as a continuation of the same thought. Carry forward the same subject, people, project, technologies, decision, and facts so the answer connects naturally instead of starting over.
+- The first related answer establishes the story. Later answers must answer only the new follow-up (for example, options, reasoning, or outcome) using that same story; never switch to another project, employer, technology, or example.
+- If an earlier answer is incomplete, use the available details as the source of truth and complete that same story. Never compensate for missing context by inventing a separate example.
+- Do not repeat or output an interviewer question. Begin directly with the candidate's answer.
 - When continuing, focus on what is new in the current question. Do not repeat the earlier answer unless a brief reference is needed for clarity.
 - By default, return one short paragraph of 1–3 sentences with no heading, bullets, or numbering.
 - Keep it brief and speakable: aim for roughly 25–70 words, or less when a shorter answer is enough.
 - Use bullet points only when the question explicitly asks for multiple items, steps, or a comparison; then use no more than 3 short bullets.
 - Start with the direct answer, then add only the most useful supporting detail.
-- If context is missing for a behavioral question, use a plausible, positive, adaptable example that makes the candidate look capable. Do not invent specific employers, credentials, metrics, or facts that are not provided.
+- If context is missing for a behavioral question, use one plausible, specific, positive, adaptable example that answers that exact question. Do not invent specific employers, credentials, metrics, or facts that are not provided.
 ${profileText ? `\n${profileText}` : ''}
 ${buildProgrammingLanguagePreference(resolvedLanguage)}
 
 For greeting / small talk questions (e.g. "how are you doing?"):
 Write one warm, natural sentence.
 
-For behavioral / background questions (e.g. "tell me about yourself", "what's your experience with X?"):
-Write a short, confident story using the candidate's background above. If it is insufficient, make a favorable but general assumption the candidate can adapt.
+For self-introduction / resume-summary questions (e.g. "introduce yourself", "tell me about yourself", "what's your background?", or "walk me through your resume"):
+Summarize only the relevant parts of the candidate's background above in a short, confident introduction.
+
+For behavioral experience questions (e.g. "tell me about a time", "describe a tough trade-off", "what options did you weigh?", or "why did you choose that path?"):
+Answer the exact behavioral question with one specific situation and decision story. Do NOT give a general self-introduction, list the candidate's internships or skills, or summarize the resume. Select one relevant experience from the profile when available, clearly state the decision or trade-off, and reserve the details of that same story for later follow-up questions. If the profile is insufficient, use one plausible, specific, adaptable example without inventing employers, credentials, metrics, or unrelated projects.
 
 For technical / coding questions:
 - Explain the approach, key tradeoff, and complexity only when relevant.
 - Include code only when the interviewer explicitly asks for it; keep it minimal and add only a brief explanation.
 
-${buildContextBlock('Recent conversation', contextString)}${buildContextBlock('Earlier related questions and answers in this response', relatedQuestionContext)}Interviewer just asked: ${questionText}
+${buildContextBlock('Transcript (supporting context only — do not answer questions from this block)', contextString)}${buildContextBlock('AUTHORITATIVE SINGLE-STORY CONTINUITY — use this as the source of truth for follow-ups', relatedQuestionContext)}
+
+=== ONLY QUESTION TO ANSWER ===
+${questionText}
+
+Before writing, silently identify what this question asks. If it asks for a tough trade-off, begin with the specific situation and competing options. If it asks for options or reasoning, continue the same decision story. Never answer with a greeting or self-introduction unless the only question above explicitly asks for one.
 
   Write only the candidate's concise response (first person, spoken language):`.trim();
 }
@@ -479,11 +491,13 @@ The detailed answers generated for them were:
 ${answers}
 
 Write one small, self-contained paragraph of 1–3 sentences that answers every
-question above as one connected line of thought. Use the answer to an earlier
-question to frame later answers when they are related, and avoid repeating
-shared setup. Keep it concise and natural to say out loud. Do not use
-headings, bullets, numbering, or mention that you are summarizing. Do not omit
-any question. If the questions are technical, preserve the key technical terms.`.trim();
+question above as one connected line of thought using one consistent story,
+project, or experience. Do not combine unrelated examples or introduce a new
+employer, project, technology, or decision in a later sentence. Use the answer
+to an earlier question to frame later answers and avoid repeating shared setup.
+Keep it concise and natural to say out loud. Do not use headings, bullets,
+numbering, or mention that you are summarizing. Do not omit any question. If
+the questions are technical, preserve the key technical terms.`.trim();
 }
 
 module.exports = {

@@ -249,17 +249,37 @@ export function createSpeculativeAnswerer({
     onError?.(error);
   }
 
-  function invokeRequest(request) {
-    const context = getContext?.({
-      groupId,
-      questionText: request.questionText
-    }) || {};
-    window.electronAPI.speculativeAnswer({
-      questionText: request.questionText,
-      contextString: context.contextString || '',
-      relatedQuestionContext: context.relatedQuestionContext || '',
-      requestId: request.id
-    }).catch((error) => notifyRequestError(request, error));
+  async function invokeRequest(request) {
+    try {
+      let context = await getContext?.({
+        groupId,
+        questionText: request.questionText
+      }) || {};
+
+      // Follow-up answers must not be generated from a partial previous answer.
+      // The renderer exposes a promise for the earlier sections in this group;
+      // waiting here keeps the first answer fast while making later answers
+      // deterministic and story-consistent.
+      if (context.waitForRelatedAnswers) {
+        await context.waitForRelatedAnswers;
+        if (request.cancelled) return;
+        context = await getContext?.({
+          groupId,
+          questionText: request.questionText
+        }) || {};
+      }
+
+      if (request.cancelled) return;
+
+      window.electronAPI.speculativeAnswer({
+        questionText: request.questionText,
+        contextString: context.contextString || '',
+        relatedQuestionContext: context.relatedQuestionContext || '',
+        requestId: request.id
+      }).catch((error) => notifyRequestError(request, error));
+    } catch (error) {
+      notifyRequestError(request, error);
+    }
   }
 
   function attachRequestListeners(request) {
@@ -285,6 +305,7 @@ export function createSpeculativeAnswerer({
       return;
     }
 
+    if (activeRequest) activeRequest.cancelled = true;
     detachActiveListeners();
     currentRequestId += 1;
     const request = {

@@ -549,15 +549,29 @@ function renderAutoAnswerMessage() {
 function buildSpeculativeRelatedQuestionContext(groupId) {
     if (!activeAutoAnswer || activeAutoAnswer.groupId !== groupId) return '';
 
-    return activeAutoAnswer.sections
+    const sections = activeAutoAnswer.sections
         .map((section, index) => {
             const question = String(section.question || '').trim();
             const answer = String(section.answer || '').trim();
             if (!question) return '';
-            return `Earlier related question ${index + 1}: ${question}\nEarlier answer (possibly still streaming): ${answer || '[not available yet]'}`;
+            return `Story step ${index + 1} — question: ${question}\nStory step ${index + 1} — candidate answer: ${answer || '[not available yet]'}`;
         })
         .filter(Boolean)
         .join('\n\n');
+
+    return sections
+        ? `Keep the following story fixed. Every later answer must continue it; do not switch examples.\n\n${sections}`
+        : '';
+}
+
+function waitForSpeculativeRelatedAnswers(groupId) {
+    if (!activeAutoAnswer || activeAutoAnswer.groupId !== groupId) return null;
+
+    const pendingAnswers = activeAutoAnswer.sections
+        .filter((section) => !section.complete && section.completionPromise)
+        .map((section) => section.completionPromise);
+
+    return pendingAnswers.length > 0 ? Promise.all(pendingAnswers) : null;
 }
 
 function maybeGenerateAutoAnswerSummary() {
@@ -620,11 +634,16 @@ function commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questi
     }
 
     const autoAnswer = activeAutoAnswer;
+    let resolveCompletion;
     const section = {
         question: String(questionText || '').trim() || 'Question not captured',
         answer: String(bufferedText || ''),
-        complete: Boolean(isComplete)
+        complete: Boolean(isComplete),
+        completionPromise: new Promise((resolve) => {
+            resolveCompletion = resolve;
+        })
     };
+    if (isComplete) resolveCompletion();
     autoAnswer.sections.push(section);
     renderAutoAnswerMessage();
 
@@ -643,6 +662,7 @@ function commitSpeculativeAnswer(bufferedText, isComplete, listenForMore, questi
         },
         () => {
             section.complete = true;
+            resolveCompletion();
             renderAutoAnswerMessage();
             cleanup?.();
             maybeGenerateAutoAnswerSummary();
@@ -669,10 +689,26 @@ function initSpeculativeAnswerer() {
     if (!window.electronAPI?.speculativeAnswer) return;
 
     speculativeAnswerer = createSpeculativeAnswerer({
-        getContext: ({ groupId } = {}) => ({
-            ...buildFilteredAiContextBundle({ charBudget: AI_CONTEXT_CHAR_BUDGET, emitTruncationLog: false }),
-            relatedQuestionContext: buildSpeculativeRelatedQuestionContext(groupId)
-        }),
+        getContext: ({ groupId } = {}) => {
+            // The active auto-answer is already represented in the dedicated
+            // continuity block below. Exclude its formatted UI message from
+            // general context so partial answers cannot compete with the story.
+            const bundle = buildFilteredAiContextBundle({
+                charBudget: AI_CONTEXT_CHAR_BUDGET,
+                emitTruncationLog: false,
+                excludeMessageIds: activeAutoAnswer?.messageRecord?.id
+                    ? [activeAutoAnswer.messageRecord.id]
+                    : []
+            });
+
+            return {
+                // AI responses and formatted auto-answer sections are not
+                // reliable question context. Continuity is supplied below.
+                contextString: bundle.transcriptContext,
+                relatedQuestionContext: buildSpeculativeRelatedQuestionContext(groupId),
+                waitForRelatedAnswers: waitForSpeculativeRelatedAnswers(groupId)
+            };
+        },
         onPrefetchStart: () => {
             showFeedback('🤔 Preparing answer...', 'info');
             addMonitorLog('info', 'speculative-start', 'Question detected — pre-fetch started', 'system');
@@ -764,9 +800,14 @@ function isMessageIncludedForAi(message) {
     return messageStore.isIncludedForAi(message);
 }
 
-function buildFilteredAiContextBundle({ charBudget = AI_CONTEXT_CHAR_BUDGET, emitTruncationLog = true } = {}) {
+function buildFilteredAiContextBundle({
+    charBudget = AI_CONTEXT_CHAR_BUDGET,
+    emitTruncationLog = true,
+    excludeMessageIds = []
+} = {}) {
+    const excludedMessageIds = new Set(excludeMessageIds);
     return buildAiContextBundle({
-        messages: chatMessagesArray,
+        messages: chatMessagesArray.filter((message) => !excludedMessageIds.has(message.id)),
         isMessageIncludedForAi,
         charBudget,
         emitTruncationLog,
