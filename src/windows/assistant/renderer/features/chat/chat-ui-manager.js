@@ -1,3 +1,5 @@
+import { formatAiResponse } from '../../../../../shared/response-formatter.js';
+
 export function createChatUiManager({
     chatContainer,
     chatMessagesElement,
@@ -12,28 +14,6 @@ export function createChatUiManager({
     showFeedback,
     addMonitorLog
 }) {
-    function formatResponse(text) {
-        const codeBlocks = [];
-        let processedText = String(text || '').replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-            const rawCode = String(code).trim();
-            const encodedCode = encodeURIComponent(rawCode);
-            const replacement = `<div class="code-block-wrapper"><button class="code-copy-btn" data-code="${encodedCode}" type="button" title="Copy Code">Copy</button><pre><code>${escapeHtml(rawCode)}</code></pre></div>`;
-            codeBlocks.push(replacement);
-            return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
-        });
-
-        processedText = processedText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
-
-        codeBlocks.forEach((block, index) => {
-            processedText = processedText.replace(`__CODE_BLOCK_${index}__`, block);
-        });
-
-        return processedText;
-    }
-
     function isChatNearBottom(threshold = 40) {
         if (!chatMessagesElement) {
             return true;
@@ -97,7 +77,7 @@ export function createChatUiManager({
             case 'ai-response':
                 icon = '\u{1F916}';
                 contentClass = 'message-content ai-response';
-                safeContent = formatResponse(content);
+                safeContent = formatAiResponse(content);
                 break;
 
             case 'system':
@@ -192,7 +172,7 @@ export function createChatUiManager({
         if (!contentEl) return;
 
         const shouldAutoScroll = isChatNearBottom();
-        contentEl.innerHTML = formatResponse(newContent);
+        contentEl.innerHTML = formatAiResponse(newContent);
 
         if (shouldAutoScroll) {
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;

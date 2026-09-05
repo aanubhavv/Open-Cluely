@@ -188,6 +188,36 @@
       white-space: pre-wrap;
     }
 
+    .math-inline {
+      font-family: 'Cambria Math', 'STIX Two Math', serif;
+      white-space: nowrap;
+    }
+
+    .math-display {
+      display: block;
+      margin: 8px 0;
+      font-family: 'Cambria Math', 'STIX Two Math', serif;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .math-fraction {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1.1;
+      margin: 0 2px;
+    }
+
+    .math-fraction > span:first-child {
+      border-bottom: 1px solid currentColor;
+      padding: 0 3px 1px;
+    }
+
+    .math-fraction > span:last-child { padding: 1px 3px 0; }
+    .math-root > span:last-child { border-top: 1px solid currentColor; }
+
     /* Streaming cursor */
     .streaming .msg-bubble::after {
       content: '▋';
@@ -443,6 +473,11 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <script type="module">
+    import { formatAiResponse } from '/response-formatter.js';
+    window.formatAiResponse = formatAiResponse;
+  </script>
+
   <script>
     'use strict';
 
@@ -564,6 +599,7 @@
 
         case 'ai-stream-end':
           if (streamEl) {
+            streamEl.querySelector('.msg-bubble').innerHTML = renderAiResponse(streamBuffer);
             streamEl.classList.remove('streaming');
             streamEl = null;
           }
@@ -747,6 +783,17 @@
       messagesEl.appendChild(el);
       scrollBottom();
       return el;
+    }
+
+    function renderAiResponse(text) {
+      if (typeof window.formatAiResponse === 'function') {
+        return window.formatAiResponse(text, { includeCodeCopyButton: false });
+      }
+
+      // Keep the mobile UI safe if the formatter module is temporarily unavailable.
+      const fallback = document.createElement('div');
+      fallback.textContent = text;
+      return fallback.innerHTML.replace(/\r?\n/g, '<br>');
     }
 
     function updatePartial(text) {

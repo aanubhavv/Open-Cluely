@@ -1130,6 +1130,38 @@ body.chat-resizing * {
   font-size: 11px;
 }
 
+.message-content .math-inline {
+  font-family: 'Cambria Math', 'STIX Two Math', serif;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.message-content .math-display {
+  display: block;
+  margin: 8px 0;
+  font-family: 'Cambria Math', 'STIX Two Math', serif;
+  text-align: center;
+  white-space: normal;
+  font-size: 1.05em;
+}
+
+.message-content .math-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.1;
+  margin: 0 2px;
+}
+
+.message-content .math-fraction > span:first-child {
+  border-bottom: 1px solid currentColor;
+  padding: 0 3px 1px;
+}
+
+.message-content .math-fraction > span:last-child { padding: 1px 3px 0; }
+.message-content .math-root > span:last-child { border-top: 1px solid currentColor; }
+
 /* HIDE SETTINGS IN COMPACT MODE */
 .settings-section {
   display: none;

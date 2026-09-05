@@ -8,6 +8,7 @@ const { WebSocketServer } = require('ws');
 const MOBILE_PORT = 7823;
 const MOBILE_HTML_PATH = path.join(__dirname, 'mobile.html');
 const WORKLET_PATH = path.join(__dirname, '..', '..', '..', 'windows', 'assistant', 'pcm-capture-worklet.js');
+const RESPONSE_FORMATTER_PATH = path.join(__dirname, '..', '..', '..', 'shared', 'response-formatter.js');
 
 function createMobileServer({ getGeminiRuntime, getScreenshotManager, getAssemblyAiService }) {
   const clients = new Set();
@@ -53,6 +54,18 @@ function createMobileServer({ getGeminiRuntime, getScreenshotManager, getAssembl
       } catch (err) {
         res.writeHead(500);
         res.end('Worklet unavailable');
+      }
+      return;
+    }
+
+    if (url === '/response-formatter.js') {
+      try {
+        const js = fs.readFileSync(RESPONSE_FORMATTER_PATH, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+        res.end(js);
+      } catch (err) {
+        res.writeHead(500);
+        res.end('Response formatter unavailable');
       }
       return;
     }
