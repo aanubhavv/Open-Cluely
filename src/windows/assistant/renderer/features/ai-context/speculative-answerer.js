@@ -16,6 +16,7 @@ const QUESTION_PHRASES = /\b(can you|could you|would you|tell me|walk me through
 const QUESTION_PHRASE_ANYWHERE = /\b(?:can you|could you|would you|should you|tell me|walk me through|what (?:is|are|was|were)|how (?:do|does|would|did)|why (?:is|are|did|do|does)|is there|are there|do you|does it|did you)\b/i;
 const QUESTION_START_ANYWHERE = /\b(?:what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b/ig;
 const QUESTION_LEAD_IN = /^(?:(?:moving on|now|also|plus|next|so|then|well|okay|alright|anyway|by the way|i wanted to ask|i would like to ask|i'd like to ask)[,;:\s-]*)+$/i;
+const QUESTION_CONTEXT_LEAD_IN = /^(?:(?:for|regarding|about|as for|on|with respect to|when it comes to)\s+(?:the\s+)?(?:last|next|previous|current|following|this|that|your|my)?\s*(?:question|topic|experience|project|role|background)|(?:i was wondering|i wanted to know|i would like to know|i'd like to know|i have a question)|(?:one more question|another question))[,;:\s-]*$/i;
 const QUESTION_START_AFTER_CONJUNCTION = /\s+(?:and|also|plus)\s+(?=(?:what|how|why|when|where|who|which|can|could|would|should|is|are|do|does|did|tell|explain|walk|describe|give)\b)/ig;
 const MIN_WORD_COUNT = 3;
 
@@ -46,10 +47,12 @@ function splitConjoinedQuestions(text) {
 
   const parts = [];
   let start = 0;
-  candidate.replace(QUESTION_START_AFTER_CONJUNCTION, (_match, offset) => {
+  candidate.replace(QUESTION_START_AFTER_CONJUNCTION, (match, offset) => {
     parts.push(candidate.slice(start, offset).trim());
-    start = offset;
-    return _match;
+    // Drop the conjunction and begin the next question at its interrogative
+    // word (for example, "and how" becomes "how").
+    start = offset + match.length;
+    return match;
   });
   parts.push(candidate.slice(start).trim());
   return parts.filter(Boolean);
@@ -74,22 +77,45 @@ function findQuestionStart(text) {
     );
     const localPrefix = prefix.slice(boundary + 1).trim();
 
-    if (!localPrefix || QUESTION_LEAD_IN.test(localPrefix)) {
+    if (
+      !localPrefix
+      || QUESTION_LEAD_IN.test(localPrefix)
+      || QUESTION_CONTEXT_LEAD_IN.test(localPrefix)
+    ) {
       questionWordStart = wordMatch.index;
       break;
     }
   }
 
-  // Prefer whichever valid marker occurs first. This matters for questions
-  // such as "what options did you weigh", where the later "did you" phrase
-  // is part of the question rather than its beginning.
-  const phraseMatch = candidate.match(QUESTION_PHRASE_ANYWHERE);
+  // Phrase matching is only a fallback at a real question boundary. A broad
+  // match anywhere in the sentence would incorrectly turn
+  // "what new skill did you learn" into "did you learn".
+  let phraseQuestionStart = -1;
+  const phraseMatchRegex = new RegExp(QUESTION_PHRASE_ANYWHERE.source, 'ig');
+  let phraseMatch;
+  while ((phraseMatch = phraseMatchRegex.exec(candidate))) {
+    const prefix = candidate.slice(0, phraseMatch.index);
+    const boundary = Math.max(
+      prefix.lastIndexOf('.'),
+      prefix.lastIndexOf('!'),
+      prefix.lastIndexOf('?')
+    );
+    const localPrefix = prefix.slice(boundary + 1).trim();
+    if (
+      !localPrefix
+      || QUESTION_LEAD_IN.test(localPrefix)
+      || QUESTION_CONTEXT_LEAD_IN.test(localPrefix)
+    ) {
+      phraseQuestionStart = phraseMatch.index;
+      break;
+    }
+  }
+
   if (
-    phraseMatch
-    && typeof phraseMatch.index === 'number'
-    && (questionWordStart < 0 || phraseMatch.index < questionWordStart)
+    phraseQuestionStart >= 0
+    && (questionWordStart < 0 || phraseQuestionStart < questionWordStart)
   ) {
-    return phraseMatch.index;
+    return phraseQuestionStart;
   }
 
   return questionWordStart;
